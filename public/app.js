@@ -1,90 +1,114 @@
 const socket = io();
 
-let username = localStorage.getItem("matin_username") || "مهمان";
+let username = localStorage.getItem("username");
 
-const usernameInput = document.getElementById("username");
-const joinBtn = document.getElementById("joinBtn");
-const sendBtn = document.getElementById("sendBtn");
-const messageInput = document.getElementById("messageInput");
+if (!username) {
+    username = prompt("نام کاربری خود را وارد کنید:");
+    
+    if (!username || username.trim() === "") {
+        username = "Guest" + Math.floor(Math.random() * 9999);
+    }
+
+    localStorage.setItem("username", username);
+}
+
+socket.emit("join", username);
+
 const messages = document.getElementById("messages");
+const usersList = document.getElementById("usersList");
+const onlineCount = document.getElementById("onlineCount");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
 
-usernameInput.value = username;
+function addMessage(user, text, time, mine = false) {
 
-joinBtn.onclick = () => {
+    const msg = document.createElement("div");
+    msg.className = mine ? "message me" : "message other";
 
-const name = usernameInput.value.trim();
+    const date = new Date(time);
 
-if(!name) return;
+    msg.innerHTML = `
+        <div class="username">${user}</div>
+        <div>${text}</div>
+        <div class="time">
+            ${date.toLocaleTimeString("fa-IR")}
+        </div>
+    `;
 
-username = name;
-
-localStorage.setItem(
-"matin_username",
-username
-);
-
-alert("خوش اومدی " + username + " 🚀");
-
-};
-
-function addMessage(data){
-
-const div = document.createElement("div");
-
-div.className = "message";
-
-const now = new Date();
-
-div.innerHTML = `
-<div class="user">${data.user}</div>
-<div>${data.text}</div>
-<div class="time">
-${now.getHours()}:
-${String(now.getMinutes()).padStart(2,"0")}
-</div>
-`;
-
-messages.appendChild(div);
-
-messages.scrollTop =
-messages.scrollHeight;
-
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
 }
 
-socket.on(
-"chat message",
-(data)=>{
-addMessage(data);
-}
-);
+function addSystem(text) {
 
-function sendMessage(){
+    const div = document.createElement("div");
 
-const text =
-messageInput.value.trim();
+    div.className = "system";
+    div.textContent = text;
 
-if(!text) return;
+    messages.appendChild(div);
 
-socket.emit(
-"chat message",
-{
-user: username,
-text: text
-}
-);
-
-messageInput.value = "";
-
+    messages.scrollTop = messages.scrollHeight;
 }
 
-sendBtn.onclick =
-sendMessage;
+sendBtn.onclick = sendMessage;
 
-messageInput.addEventListener(
-"keypress",
-(e)=>{
-if(e.key==="Enter"){
-sendMessage();
+messageInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
+
+function sendMessage() {
+
+    const text = messageInput.value.trim();
+
+    if (!text) return;
+
+    socket.emit("group-message", {
+        user: username,
+        text: text
+    });
+
+    messageInput.value = "";
 }
-}
-);
+
+socket.on("group-message", (data) => {
+
+    addMessage(
+        data.user,
+        data.text,
+        data.time,
+        data.user === username
+    );
+
+});
+
+socket.on("system", (data) => {
+
+    addSystem(data.text);
+
+});
+
+socket.on("users", (users) => {
+
+    usersList.innerHTML = "";
+
+    onlineCount.textContent = users.length;
+
+    users.forEach(user => {
+
+        const div = document.createElement("div");
+
+        div.className = "user-item";
+
+        div.innerHTML = `
+            <div class="user-dot"></div>
+            <div>${user.username}</div>
+        `;
+
+        usersList.appendChild(div);
+
+    });
+
+});
