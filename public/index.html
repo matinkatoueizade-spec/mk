@@ -1,79 +1,64 @@
-<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>🌍 Matin Chat Ultimate</title><link rel="stylesheet" href="style.css"></head><body><div id="loadingScreen"><div class="loader-logo">
-🌍 Matin Chat
-</div><div class="loader-text">
-درحال بارگذاری...
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>🌍 گروه چت همگانی Ultimate</title><link rel="stylesheet" href="style.css"></head><body><div class="loading-screen" id="loadingScreen"><div class="loading-logo">
+🌍 Chat
+</div><div class="loading-bar">
+<div class="loading-fill"></div>
 </div></div><div class="app"><header class="topbar"><div class="logo">
 🌍 گروه چت همگانی
-</div><div class="topbar-actions"><button id="themeBtn">
-🌙
-</button><button id="settingsBtn">
-⚙️
-</button><button id="notificationsBtn">
-🔔
-</button><div class="online">🟢
+</div><div class="topbar-actions"><div class="online">
+🟢 <span id="onlineCount">0</span>
+</div><button id="settingsBtn">⚙️</button>
 
-<span id="onlineCount">
-0
-</span></div></div></header><div class="main"><aside class="users"><div class="users-header"><div class="users-title">
+<button id="profileBtn">👤</button>
+
+</div></header><div class="main"><aside class="users"><div class="users-title">
 کاربران آنلاین
-</div><input
-type="text"
-id="searchUser"
-placeholder="جستجو...">
-
-</div><div id="usersList"></div></aside><section class="chat"><div class="chat-header"><div class="room-info"><h3>
-🌍 گروه چت همگانی
-</h3><span>
-اتاق اصلی
-</span></div><div class="chat-tools"><button id="emojiBtn">
+</div><div class="search-box">
+<input type="text" placeholder="جستجو کاربر...">
+</div><div id="usersList"></div></aside><section class="chat"><div id="messages"></div><div id="typingArea"></div><div class="input-area"><button id="emojiBtn">
 😀
-</button><button id="imageBtn">
-🖼️
-</button><button id="roomsBtn">
-🏠
-</button></div></div><div id="messages"></div><div id="typingArea"></div><div class="input-area"><button id="attachBtn">
-📎
 </button><input
 id="messageInput"
 type="text"
-maxlength="500"
-placeholder="پیام خود را بنویس...">
+placeholder="پیام خود را بنویسید...">
 
 <button id="sendBtn">
-ارسال 🚀
-</button></div></section><aside class="right-panel"><div class="profile-card"><div class="avatar">
-👤
-</div><div id="myUsername">
-کاربر
-</div></div><div class="panel-section"><h4>
-اعلان‌ها
-</h4><div id="notifications">اعلانی وجود ندارد
-
-</div></div><div class="panel-section"><h4>
-اتاق‌ها
-</h4><div id="roomsList"><div class="room">
-🌍 عمومی
-</div><div class="room">
-🎮 گیم
-</div><div class="room">
-💻 برنامه نویسی
-</div></div></div></aside></div></div><div id="privateChatModal"
-class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>
-پیام خصوصی
-</h3><button id="closePrivate">
-✖
-</button></div><div id="privateMessages"></div><div class="private-input"><input
-id="privateInput"
-placeholder="پیام خصوصی...">
-
-<button id="privateSend">
 ارسال
-</button></div></div></div><div id="settingsModal"
-class="modal hidden"><div class="modal-content"><h2>
+</button></div><div class="emoji-panel" id="emojiPanel"><div class="emoji">😀</div>
+<div class="emoji">😂</div>
+<div class="emoji">😍</div>
+<div class="emoji">🔥</div>
+<div class="emoji">❤️</div>
+<div class="emoji">👍</div>
+<div class="emoji">🎉</div>
+<div class="emoji">😎</div>
+<div class="emoji">🤖</div>
+<div class="emoji">🚀</div></div></section></div></div><!-- Profile Modal --><div class="modal" id="profileModal"><div class="modal-content"><div class="modal-header"><div class="modal-title">
+پروفایل من
+</div><button class="modal-close">
+×
+</button></div><div class="modal-body"><div class="profile-card"><div class="profile-avatar" id="profileAvatar">
+M
+</div><div class="profile-name" id="profileName">
+کاربر
+</div><div class="profile-status">
+آنلاین
+</div></div></div></div></div><!-- Private Chat Modal --><div class="modal" id="privateModal"><div class="modal-content"><div class="modal-header"><div class="modal-title">
+چت خصوصی
+</div><button class="modal-close">
+×
+</button></div><div class="modal-body"><p>
+شروع گفتگوی خصوصی...
+</p></div></div></div><!-- Settings Panel --><div class="settings-panel" id="settingsPanel"><div class="settings-header">
 تنظیمات
-</h2><button id="closeSettings">
-بستن
-</button></div></div><script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body></html>
+</div><div class="setting-item"><div class="setting-title">
+حالت تاریک
+</div><div class="setting-desc">
+فعال یا غیرفعال کردن تم تاریک
+</div><div class="switch active" id="darkModeSwitch"></div></div><div class="setting-item"><div class="setting-title">
+اعلان‌ها
+</div><div class="setting-desc">
+نمایش نوتیفیکیشن پیام‌ها
+</div><div class="switch active"></div></div></div><!-- Toast --><div class="toast" id="toast">
+پیام جدید دریافت شد
+</div><script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body></html>
