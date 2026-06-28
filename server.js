@@ -1,3 +1,113 @@
+/* ==========================
+   Ultimate Pro - Part 2
+   Typing + Anti Spam
+========================== */
+
+const typingUsers = new Set();
+const spamMap = new Map();
+
+io.on("connection", (socket) => {
+
+  /* ===== Typing ===== */
+
+  socket.on("typing", () => {
+
+    if (!socket.username) return;
+
+    typingUsers.add(socket.username);
+
+    socket.broadcast.emit(
+      "userTyping",
+      socket.username
+    );
+
+  });
+
+  socket.on("stopTyping", () => {
+
+    if (!socket.username) return;
+
+    typingUsers.delete(
+      socket.username
+    );
+
+    socket.broadcast.emit(
+      "userStopTyping",
+      socket.username
+    );
+
+  });
+
+  /* ===== Anti Spam ===== */
+
+  socket.on("chatMessage", () => {
+
+    const now = Date.now();
+
+    if (
+      !spamMap.has(socket.id)
+    ) {
+
+      spamMap.set(
+        socket.id,
+        []
+      );
+
+    }
+
+    const messages =
+      spamMap.get(socket.id);
+
+    messages.push(now);
+
+    while (
+      messages.length &&
+      now - messages[0] > 5000
+    ) {
+
+      messages.shift();
+
+    }
+
+    if (
+      messages.length > 8
+    ) {
+
+      socket.emit(
+        "systemMessage",
+        "🚫 خیلی سریع پیام میفرستی!"
+      );
+
+      return;
+
+    }
+
+  });
+
+  /* ===== Disconnect ===== */
+
+  socket.on(
+    "disconnect",
+    () => {
+
+      spamMap.delete(
+        socket.id
+      );
+
+      if (
+        socket.username
+      ) {
+
+        typingUsers.delete(
+          socket.username
+        );
+
+      }
+
+    }
+  );
+
+});
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
