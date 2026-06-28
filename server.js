@@ -2,82 +2,165 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+const io = new Server(server,{
+cors:{
+origin:"*"
+}
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname,"public")));
 
 const users = {};
+const messages = [];
 
-io.on("connection", (socket) => {
+const MAX_MESSAGES = 100;
+const MESSAGE_LIMIT = 500;
+const SPAM_TIME = 1000;
 
-  console.log("Connected:", socket.id);
+app.get("/health",(req,res)=>{
+res.json({
+status:"online",
+users:Object.keys(users).length
+});
+});
 
-  socket.on("join", (username) => {
+io.on("connection",(socket)=>{
+
+let lastMessageTime = 0;
+
+socket.on("join",(username)=>{
 
     users[socket.id] = {
-      id: socket.id,
-      username
+        id:socket.id,
+        uid:uuidv4(),
+        username:username || "مهمان",
+        room:"global"
     };
 
-    io.emit("system", {
-      type: "join",
-      text: `${username} وارد گروه شد 🚀`
+    socket.join("global");
+
+    socket.emit("messageHistory",messages);
+
+    io.emit("usersList",Object.values(users));
+
+    io.emit("systemMessage",{
+        id:uuidv4(),
+        text:`${users[socket.id].username} وارد شد 🎉`
     });
 
-    io.emit("users", Object.values(users));
+});
 
-  });
+socket.on("typing",()=>{
 
-  socket.on("group-message", (data) => {
+    if(!users[socket.id]) return;
 
-    io.emit("group-message", {
-      user: data.user,
-      text: data.text,
-      time: Date.now()
+    socket.broadcast
+    .to(users[socket.id].room)
+    .emit("typing",{
+        user:users[socket.id].username
     });
 
-  });
+});
 
-  socket.on("private-message", (data) => {
+socket.on("joinRoom",(room)=>{
 
-    io.to(data.to).emit("private-message", {
-      from: users[socket.id]?.username || "Unknown",
-      text: data.text,
-      time: Date.now()
-    });
+    if(!users[socket.id]) return;
 
-  });
+    socket.leave(users[socket.id].room);
 
-  socket.on("disconnect", () => {
+    users[socket.id].room = room;
 
-    if (users[socket.id]) {
+    socket.join(room);
 
-      io.emit("system", {
-        type: "leave",
-        text: `${users[socket.id].username} خارج شد 👋`
-      });
+    socket.emit("roomJoined",room);
 
-      delete users[socket.id];
+});
 
-      io.emit("users", Object.values(users));
+socket.on("chatMessage",(text)=>{
+
+    if(!users[socket.id]) return;
+
+    if(!text) return;
+
+    text = String(text).trim();
+
+    if(text.length === 0) return;
+
+    if(text.length > MESSAGE_LIMIT) return;
+
+    const now = Date.now();
+
+    if(now - lastMessageTime < SPAM_TIME){
+        socket.emit("errorMessage","خیلی سریع پیام میدی!");
+        return;
     }
 
-    console.log("Disconnected:", socket.id);
+    lastMessageTime = now;
 
-  });
+    const msg = {
+        id:uuidv4(),
+        user:users[socket.id].username,
+        text,
+        room:users[socket.id].room,
+        time:now
+    };
+
+    messages.push(msg);
+
+    if(messages.length > MAX_MESSAGES){
+        messages.shift();
+    }
+
+    io.to(users[socket.id].room)
+    .emit("chatMessage",msg);
+
+});
+
+socket.on("privateMessage",(data)=>{
+
+    if(!users[socket.id]) return;
+
+    const target = data.targetId;
+
+    if(!target) return;
+
+    const msg = {
+        id:uuidv4(),
+        from:users[socket.id].username,
+        text:data.text,
+        time:Date.now()
+    };
+
+    io.to(target).emit("privateMessage",msg);
+
+    socket.emit("privateMessage",msg);
+
+});
+
+socket.on("disconnect",()=>{
+
+    if(!users[socket.id]) return;
+
+    io.emit("systemMessage",{
+        id:uuidv4(),
+        text:`${users[socket.id].username} خارج شد 👋`
+    });
+
+    delete users[socket.id];
+
+    io.emit("usersList",Object.values(users));
+
+});
 
 });
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-  console.log("Server Started On Port", PORT);
+server.listen(PORT,()=>{
+console.log("🚀 Matin Chat Ultimate Running On Port " + PORT);
 });
