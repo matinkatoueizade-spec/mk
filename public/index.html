@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Matin Chat 3.0</title>
+<title>🌍 گروه چت همگانی</title>
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -15,32 +15,34 @@
 <div class="app">
 
 <header class="topbar">
-<div class="logo">🚀 Matin Chat</div>
 
-<div class="online-box">
-<span id="onlineCount">0</span>
-آنلاین
+<div class="logo">
+🌍 گروه چت همگانی
 </div>
+
+<div class="online">
+🟢 <span id="onlineCount">0</span>
+</div>
+
 </header>
 
-<div class="login-box">
+<div class="main">
 
-<input
-id="username"
-type="text"
-placeholder="نام کاربری">
+<aside class="users">
 
-<button id="joinBtn">
-ورود
-</button>
-
+<div class="users-title">
+کاربران آنلاین
 </div>
 
-<div id="chatArea">
+<div id="usersList"></div>
+
+</aside>
+
+<section class="chat">
 
 <div id="messages"></div>
 
-<div class="send-box">
+<div class="input-area">
 
 <input
 id="messageInput"
@@ -52,6 +54,8 @@ placeholder="پیام بنویس...">
 </button>
 
 </div>
+
+</section>
 
 </div>
 
