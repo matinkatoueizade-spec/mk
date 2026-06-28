@@ -1,68 +1,79 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>🌍 گروه چت همگانی</title>
-
-<link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-
-<div class="app">
-
-<header class="topbar">
-
-<div class="logo">
+<title>🌍 Matin Chat Ultimate</title><link rel="stylesheet" href="style.css"></head><body><div id="loadingScreen"><div class="loader-logo">
+🌍 Matin Chat
+</div><div class="loader-text">
+درحال بارگذاری...
+</div></div><div class="app"><header class="topbar"><div class="logo">
 🌍 گروه چت همگانی
-</div>
+</div><div class="topbar-actions"><button id="themeBtn">
+🌙
+</button><button id="settingsBtn">
+⚙️
+</button><button id="notificationsBtn">
+🔔
+</button><div class="online">🟢
 
-<div class="online">
-🟢 <span id="onlineCount">0</span>
-</div>
-
-</header>
-
-<div class="main">
-
-<aside class="users">
-
-<div class="users-title">
+<span id="onlineCount">
+0
+</span></div></div></header><div class="main"><aside class="users"><div class="users-header"><div class="users-title">
 کاربران آنلاین
-</div>
+</div><input
+type="text"
+id="searchUser"
+placeholder="جستجو...">
 
-<div id="usersList"></div>
-
-</aside>
-
-<section class="chat">
-
-<div id="messages"></div>
-
-<div class="input-area">
-
-<input
+</div><div id="usersList"></div></aside><section class="chat"><div class="chat-header"><div class="room-info"><h3>
+🌍 گروه چت همگانی
+</h3><span>
+اتاق اصلی
+</span></div><div class="chat-tools"><button id="emojiBtn">
+😀
+</button><button id="imageBtn">
+🖼️
+</button><button id="roomsBtn">
+🏠
+</button></div></div><div id="messages"></div><div id="typingArea"></div><div class="input-area"><button id="attachBtn">
+📎
+</button><input
 id="messageInput"
 type="text"
-placeholder="پیام بنویس...">
+maxlength="500"
+placeholder="پیام خود را بنویس...">
 
 <button id="sendBtn">
+ارسال 🚀
+</button></div></section><aside class="right-panel"><div class="profile-card"><div class="avatar">
+👤
+</div><div id="myUsername">
+کاربر
+</div></div><div class="panel-section"><h4>
+اعلان‌ها
+</h4><div id="notifications">اعلانی وجود ندارد
+
+</div></div><div class="panel-section"><h4>
+اتاق‌ها
+</h4><div id="roomsList"><div class="room">
+🌍 عمومی
+</div><div class="room">
+🎮 گیم
+</div><div class="room">
+💻 برنامه نویسی
+</div></div></div></aside></div></div><div id="privateChatModal"
+class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>
+پیام خصوصی
+</h3><button id="closePrivate">
+✖
+</button></div><div id="privateMessages"></div><div class="private-input"><input
+id="privateInput"
+placeholder="پیام خصوصی...">
+
+<button id="privateSend">
 ارسال
-</button>
-
-</div>
-
-</section>
-
-</div>
-
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="app.js"></script>
-
-</body>
-</html>
+</button></div></div></div><div id="settingsModal"
+class="modal hidden"><div class="modal-content"><h2>
+تنظیمات
+</h2><button id="closeSettings">
+بستن
+</button></div></div><script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body></html>
