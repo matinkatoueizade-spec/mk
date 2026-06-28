@@ -1,65 +1,78 @@
 const socket = io();
 
-let username =
-localStorage.getItem("username");
+let username = "";
 
-if (!username) {
-username = prompt("نام کاربری خود را وارد کن:");
+/* ==========================
+Username Login
+========================== */
 
-if (!username || username.trim() === "") {
-    username = "مهمان" + Math.floor(Math.random() * 9999);
-}
-
-localStorage.setItem("username", username);
-
+while (!username || username.trim().length < 2) {
+username = prompt("نام کاربری خود را وارد کنید:");
 }
 
 socket.emit("join", username);
 
-const messages =
-document.getElementById("messages");
+/* ==========================
+Elements
+========================== */
 
-const messageInput =
-document.getElementById("messageInput");
+const messages = document.getElementById("messages");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const usersList = document.getElementById("usersList");
+const onlineCount = document.getElementById("onlineCount");
 
-const sendBtn =
-document.getElementById("sendBtn");
+/* ==========================
+Add Message
+========================== */
 
-const usersList =
-document.getElementById("usersList");
+function addMessage(data, mine = false) {
 
-const onlineCount =
-document.getElementById("onlineCount");
+const div = document.createElement("div");
 
-function addMessage(html, className = "") {
+div.className = mine
+    ? "message me"
+    : "message other";
 
-const div =
-document.createElement("div");
+div.innerHTML = `
+    <div class="username">
+        ${data.username}
+    </div>
 
-div.className = className;
+    <div class="text">
+        ${data.message}
+    </div>
 
-div.innerHTML = html;
+    <span class="time">
+        ${data.time}
+    </span>
+`;
 
 messages.appendChild(div);
 
 messages.scrollTop =
-messages.scrollHeight;
+    messages.scrollHeight;
 
 }
+
+/* ==========================
+Send Message
+========================== */
 
 function sendMessage() {
 
 const text =
-messageInput.value.trim();
+    messageInput.value.trim();
 
 if (!text) return;
 
-socket.emit(
-    "chatMessage",
-    text
-);
+socket.emit("chatMessage", {
+    message: text
+});
 
 messageInput.value = "";
+
+messageInput.focus();
 
 }
 
@@ -71,139 +84,372 @@ sendMessage
 messageInput.addEventListener(
 "keypress",
 (e) => {
-
-    socket.emit("typing");
-
-    if (e.key === "Enter") {
-        sendMessage();
-    }
+if (e.key === "Enter") {
+sendMessage();
 }
-
+}
 );
 
-socket.on(
-"chatMessage",
-(msg) => {
+/* ==========================
+Receive Message
+========================== */
 
-    const time =
-    new Date(msg.time)
-    .toLocaleTimeString("fa-IR");
+socket.on("message", (data) => {
 
-    addMessage(
-    `
-    <div class="message">
-    <div class="username">
-    ${msg.user}
-    </div>
-
-    <div class="text">
-    ${msg.text}
-    </div>
-
-    <div class="time">
-    ${time}
-    </div>
-    </div>
-    `
-    );
-}
-
+addMessage(
+    data,
+    data.username === username
 );
 
-socket.on(
-"systemMessage",
-(msg) => {
+});
 
-    addMessage(
-    `
-    <div class="system">
-    ${msg.text}
-    </div>
-    `
-    );
-}
+/* ==========================
+Online Users
+========================== */
 
-);
+socket.on("users", (users) => {
 
-socket.on(
-"usersList",
-(users) => {
+usersList.innerHTML = "";
 
-    usersList.innerHTML = "";
-
-    onlineCount.textContent =
+onlineCount.textContent =
     users.length;
 
-    users.forEach(user => {
-
-        const div =
-        document.createElement("div");
-
-        div.className =
-        "user-item";
-
-        div.innerHTML =
-        `
-        <div class="user-dot"></div>
-        <span>${user.username}</span>
-        `;
-
-        usersList.appendChild(div);
-
-    });
-
-}
-
-);
-
-socket.on(
-"typing",
-(data) => {
-
-    const old =
-    document.getElementById("typingBox");
-
-    if (old) old.remove();
+users.forEach(user => {
 
     const div =
+        document.createElement("div");
+
+    div.className = "user-item";
+
+    div.innerHTML = `
+        <div class="user-dot"></div>
+        <span>${user}</span>
+    `;
+
+    usersList.appendChild(div);
+
+});
+
+});
+
+/* ==========================
+System Message
+========================== */
+
+socket.on("system", (text) => {
+
+const div =
     document.createElement("div");
 
-    div.id = "typingBox";
+div.className = "system";
 
-    div.className = "system";
+div.textContent = text;
 
-    div.innerText =
-    `${data.user} درحال تایپ است...`;
+messages.appendChild(div);
 
-    messages.appendChild(div);
+messages.scrollTop =
+    messages.scrollHeight;
 
-    setTimeout(() => {
+});
+/* ==========================
+Local Storage Username
+========================== */
 
-        const t =
-        document.getElementById("typingBox");
+const savedName =
+localStorage.getItem("username");
 
-        if (t) t.remove();
+if(savedName){
+username = savedName;
+}else{
+localStorage.setItem(
+"username",
+username
+);
+}
 
-    }, 1500);
+/* ==========================
+Emoji Panel
+========================== */
+
+const emojiBtn =
+document.getElementById("emojiBtn");
+
+const emojiPanel =
+document.getElementById("emojiPanel");
+
+if(emojiBtn && emojiPanel){
+
+emojiBtn.addEventListener(
+"click",
+()=>{
+emojiPanel.classList.toggle("show");
+}
+);
+
+document
+.querySelectorAll(".emoji")
+.forEach(emoji=>{
+
+emoji.addEventListener(
+"click",
+()=>{
+
+messageInput.value +=
+emoji.textContent;
+
+messageInput.focus();
 
 }
 
+);
+
+});
+
+}
+
+/* ==========================
+Typing Status
+========================== */
+
+const typingArea =
+document.getElementById("typingArea");
+
+let typingTimeout;
+
+messageInput.addEventListener(
+"input",
+()=>{
+
+socket.emit("typing");
+
+clearTimeout(
+typingTimeout
+);
+
+typingTimeout =
+setTimeout(()=>{
+
+socket.emit(
+"stopTyping"
+);
+
+},1500);
+
+}
 );
 
 socket.on(
-"privateMessage",
-(msg) => {
+"userTyping",
+(user)=>{
 
-    addMessage(
-    `
-    <div class="message private">
-    📩 پیام خصوصی از
-    <b>${msg.from}</b>
-    <br><br>
-    ${msg.text}
-    </div>
-    `
-    );
+if(user===username)
+return;
+
+if(typingArea){
+
+typingArea.innerHTML =
+"✍️ ${user} در حال تایپ است...";
+
 }
 
+}
 );
+
+socket.on(
+"userStopTyping",
+()=>{
+
+if(typingArea){
+
+typingArea.innerHTML="";
+
+}
+
+}
+);
+
+/* ==========================
+Browser Notification
+========================== */
+
+if(
+"Notification"
+in window
+){
+
+Notification.requestPermission();
+
+}
+
+socket.on(
+"message",
+(data)=>{
+
+if(
+data.username !== username &&
+document.hidden
+){
+
+if(
+Notification.permission ===
+"granted"
+){
+
+new Notification(
+data.username,
+{
+body:data.message,
+icon:"/icon.png"
+}
+);
+
+}
+
+}
+
+}
+);
+
+/* ==========================
+Profile Modal
+========================== */
+
+const profileBtn =
+document.getElementById(
+"profileBtn"
+);
+
+const profileModal =
+document.getElementById(
+"profileModal"
+);
+
+if(
+profileBtn &&
+profileModal
+){
+
+profileBtn.addEventListener(
+"click",
+()=>{
+
+profileModal.style.display=
+"flex";
+
+const profileName =
+document.getElementById(
+"profileName"
+);
+
+const profileAvatar =
+document.getElementById(
+"profileAvatar"
+);
+
+if(profileName){
+
+profileName.textContent =
+username;
+
+}
+
+if(profileAvatar){
+
+profileAvatar.textContent =
+username
+.charAt(0)
+.toUpperCase();
+
+}
+
+}
+);
+
+}
+
+/* ==========================
+Close Modals
+========================== */
+
+document
+.querySelectorAll(
+".modal-close"
+)
+.forEach(btn=>{
+
+btn.addEventListener(
+"click",
+()=>{
+
+document
+.querySelectorAll(
+".modal"
+)
+.forEach(modal=>{
+
+modal.style.display=
+"none";
+
+});
+
+}
+);
+
+});
+
+/* ==========================
+Dark Mode
+========================== */
+
+const darkSwitch =
+document.getElementById(
+"darkModeSwitch"
+);
+
+const savedTheme =
+localStorage.getItem(
+"theme"
+);
+
+if(savedTheme==="light"){
+
+document.body.classList.add(
+"light"
+);
+
+}
+
+if(darkSwitch){
+
+darkSwitch.addEventListener(
+"click",
+()=>{
+
+document.body.classList.toggle(
+"light"
+);
+
+if(
+document.body.classList.contains(
+"light"
+)
+){
+
+localStorage.setItem(
+"theme",
+"light"
+);
+
+}else{
+
+localStorage.setItem(
+"theme",
+"dark"
+);
+
+}
+
+}
+);
+
+    }
