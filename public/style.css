@@ -615,7 +615,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════
-   INPUT BAR - دکمه ارسال سمت راست
+   INPUT BAR
 ═══════════════════════════════════════════════════ */
 #input-bar {
     background: var(--bg-secondary);
@@ -1294,4 +1294,4 @@ body {
         border-right: 1px solid var(--border);
         box-shadow: 0 0 60px rgba(0, 0, 0, .3);
     }
-}
+   }
