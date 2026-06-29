@@ -1,7 +1,7 @@
 {
-  "name": "matin-telegram-clone",
-  "version": "4.0.0",
-  "description": "چت‌روم شبیه تلگرام با امکانات کامل",
+  "name": "telegram-clone",
+  "version": "5.0.0",
+  "description": "چت‌روم کامل شبیه تلگرام",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,8 +13,8 @@
     "multer": "^1.4.5-lts.1",
     "lowdb": "^5.1.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
