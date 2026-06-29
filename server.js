@@ -75,112 +75,50 @@ function isSpam(socketId, msg) {
 }
 
 // ============================================
-//  ChatBot پیشرفته
+//  ChatBot
 // ============================================
 function getBotResponse(msg, username) {
     const lower = msg.toLowerCase();
 
-    // سلام و احوالپرسی
-    if (lower.includes('سلام') || lower.includes('hi') || lower.includes('hello') || lower.includes('درود')) {
-        return `👋 سلام ${username}! خوش آمدید. من راهنمای هوشمند شما هستم. 
-        📌 می‌توانید سوالات خود را بپرسید یا از من راهنمایی بگیرید.`;
+    if (lower.includes('سلام') || lower.includes('hi') || lower.includes('hello')) {
+        return `👋 سلام ${username}! خوش آمدید. من راهنمای شما هستم.`;
     }
-    if (lower.includes('چطوری') || lower.includes('حالت') || lower.includes('چطورید')) {
-        return `😊 ممنون ${username}! من رباتم و همیشه آماده کمک به شما هستم. شما چطورید؟`;
+    if (lower.includes('چطوری') || lower.includes('حالت')) {
+        return `😊 ممنون ${username}! من رباتم و همیشه آماده کمک هستم.`;
     }
-    if (lower.includes('خداحافظ') || lower.includes('bye') || lower.includes('خدا حافظ')) {
-        return `👋 خداحافظ ${username}! روز خوبی داشته باشید. هر وقت نیاز داشتید برگردید.`;
+    if (lower.includes('خداحافظ') || lower.includes('bye')) {
+        return `👋 خداحافظ ${username}! روز خوبی داشته باشید.`;
     }
-
-    // راهنمای کامل
-    if (lower.includes('راهنما') || lower.includes('help') || lower.includes('کمک') || lower.includes('امکانات')) {
-        return `📖 **راهنمای کامل گپ گروهی**:
-
-✅ **ارسال پیام:**
-• متن، ایموجی، استیکر
-• عکس، فیلم، فایل (تا 50MB)
-• پیام صوتی (فایل صوتی)
-
-✅ **چت خصوصی:**
-• روی آواتار کاربر کلیک کنید
-• گزینه "چت خصوصی" را انتخاب کنید
-
-✅ **ویرایش و حذف:**
-• ویرایش: دوبار کلیک روی پیام خود
-• حذف برای من: راست‌کلیک > حذف برای من
-• حذف برای همه: راست‌کلیک > حذف برای همه
-
-✅ **واکنش‌ها:**
-• راست‌کلیک > واکنش (❤️🔥👍😊)
-• یا روی واکنش‌های موجود کلیک کنید
-
-✅ **جستجو:**
-• روی 🔍 در هدر کلیک کنید
-• عبارت مورد نظر را وارد کنید
-
-✅ **تنظیمات:**
-• تغییر تم (۶ رنگ مختلف)
-• تغییر اندازه فونت
-
-✅ **پروفایل:**
-• ویرایش نام، بیو، سن
-• آپلود عکس پروفایل
-
-✅ **امکانات بیشتر:**
-• خروجی چت (دانلود TXT)
-• پاک کردن تاریخچه خود
-• مشاهده سطح کاربران`;
+    if (lower.includes('راهنما') || lower.includes('help') || lower.includes('کمک')) {
+        return `📖 **راهنمای کامل**:
+✅ ارسال متن، ایموجی، استیکر، عکس، فیلم، فایل
+✅ چت خصوصی با کلیک روی آواتار
+✅ ویرایش پیام با دوبار کلیک
+✅ حذف برای من/همه
+✅ واکنش دلخواه
+✅ جستجو در پیام‌ها
+✅ ۶ تم رنگی
+✅ خروجی چت TXT
+✅ پاک کردن تاریخچه`;
     }
-
-    // چت خصوصی
-    if (lower.includes('چت خصوصی') || lower.includes('خصوصی') || lower.includes('پیام خصوصی')) {
+    if (lower.includes('چت خصوصی')) {
         return `🔒 **چت خصوصی**:
-1️⃣ روی آواتار کاربر مورد نظر کلیک کنید
-2️⃣ در پروفایل باز شده، روی "چت خصوصی" کلیک کنید
-3️⃣ پیام‌های شما فقط بین شما دو نفر دیده می‌شود
-4️⃣ برای بازگشت به گروه، روی ← کلیک کنید
-
-✅ پیام‌های خصوصی با 🔒 مشخص می‌شوند.`;
+1️⃣ روی آواتار کاربر کلیک کنید
+2️⃣ روی "چت خصوصی" کلیک کنید
+3️⃣ برای بازگشت روی ← کلیک کنید`;
     }
-
-    // فایل
-    if (lower.includes('فایل') || lower.includes('عکس') || lower.includes('فیلم') || lower.includes('آپلود')) {
-        return `📎 **ارسال فایل**:
-1️⃣ روی دکمه 📎 کلیک کنید
-2️⃣ فایل مورد نظر را انتخاب کنید
-3️⃣ فایل آپلود و ارسال می‌شود
-
-📝 **محدودیت‌ها:**
-• حجم حداکثر: 50MB
-• فرمت‌های پشتیبانی: تصویر، فیلم، صدا، PDF، Word، ZIP
-
-💡 عکس‌ها و فیلم‌ها قابل مشاهده درون چت هستند.`;
+    if (lower.includes('تنظیمات') || lower.includes('تم')) {
+        return `🎨 **تنظیمات**:
+6 تم: 🌙 تیره | ☀️ روشن | 🍫 شکلاتی | ☕ قهوه‌ای | 🌿 سبز | 💜 یاسی`;
     }
-
-    // تنظیمات
-    if (lower.includes('تنظیمات') || lower.includes('تم') || lower.includes('رنگ') || lower.includes('فونت')) {
-        return `🎨 **تنظیمات ظاهری**:
-1️⃣ روی دکمه ⚙️ در هدر کلیک کنید
-2️⃣ یکی از ۶ تم را انتخاب کنید:
-   🌙 تیره | ☀️ روشن | 🍫 شکلاتی | ☕ قهوه‌ای | 🌿 سبز | 💜 یاسی
-3️⃣ اندازه فونت را با اسلایدر تنظیم کنید
-
-💾 تنظیمات شما به‌طور خودکار ذخیره می‌شوند.`;
-    }
-
-    // لطیفه
-    if (lower.includes('لطیفه') || lower.includes('جوک') || lower.includes('خنده')) {
+    if (lower.includes('لطیفه') || lower.includes('جوک')) {
         const jokes = [
-            "😂 چرا برنامه‌نویس‌ها همیشه خسته‌اند؟ چون روز و شب باگ می‌گیرند!",
+            "😂 چرا برنامه‌نویس‌ها خسته‌اند؟ چون باگ می‌گیرند!",
             "😄 تفاوت برنامه‌نویس و پزشک؟ پزشک می‌گوید: بیمار رو بیارید، برنامه‌نویس می‌گوید: باگ رو بیارید",
-            "🤣 چرا برنامه‌نویس‌ها از طبیعت بدشان می‌آید؟ چون درخت‌ها exception پرتاب می‌کنند!",
-            "😆 یک برنامه‌نویس به دیگری: کدت رو ببین، انگار با ماکارونی نوشتیش!",
-            "🤪 چرا برنامه‌نویس‌ها عاشق قهوه‌اند؟ چون بدون قهوه exception می‌دهند!"
+            "🤣 چرا برنامه‌نویس‌ها از طبیعت بدشان می‌آید؟ چون درخت‌ها exception پرتاب می‌کنند!"
         ];
         return jokes[Math.floor(Math.random() * jokes.length)];
     }
-
-    // پاسخ پیش‌فرض
     return null;
 }
 
@@ -270,7 +208,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // واکنش با ایموجی دلخواه
+    // واکنش
     socket.on('add_reaction', ({ msgId, emoji }) => {
         const msg = messages.find(m => m.id === msgId);
         if (msg && !msg.deleted) {
@@ -282,12 +220,13 @@ io.on('connection', (socket) => {
         }
     });
 
-    // حذف برای همه - کاملاً کار می‌کند
+    // حذف برای همه - رفع باگ
     socket.on('delete_for_all', (msgId) => {
         const msg = messages.find(m => m.id === msgId);
         if (msg && msg.sender_id === socket.id) {
             msg.deleted = true;
             io.emit('message_updated', msg);
+            socket.emit('delete_confirmed', msgId);
         }
     });
 
@@ -295,6 +234,7 @@ io.on('connection', (socket) => {
     socket.on('clear_my_messages', () => {
         messages.forEach(m => { if (m.sender_id === socket.id) m.deleted = true; });
         io.emit('messages_cleared', socket.id);
+        socket.emit('clear_confirmed');
     });
 
     // تایپینگ
@@ -345,12 +285,24 @@ app.get('/api/users', (req, res) => {
     })));
 });
 
+// ============================================
+//  PWA و تبدیل به APK
+// ============================================
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
     console.log(`🌐 http://localhost:${PORT}`);
+    console.log(`📱 برای تبدیل به APK: npm run build:pwa`);
 });
