@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════
-//   STATE
-// ═══════════════════════════════════════════
+// ============================================
+//  STATE
+// ============================================
 const STATE = {
     myId: localStorage.getItem('pm_user_id') || 'user_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     myName: localStorage.getItem('pm_username') || '',
@@ -8,6 +8,7 @@ const STATE = {
     myAge: localStorage.getItem('pm_age') || '',
     myEmail: localStorage.getItem('pm_email') || '',
     myColor: localStorage.getItem('pm_color') || '#c4956a',
+    myAvatar: localStorage.getItem('pm_avatar') || null,
     theme: localStorage.getItem('pm_theme') || 'dark',
     fontSize: parseInt(localStorage.getItem('pm_font_size')) || 15,
     messages: [],
@@ -61,9 +62,9 @@ const toastEl = $('toast');
 const toastText = $('toast-text');
 const fileInput = $('file-input');
 
-// ═══════════════════════════════════════════
-//   UTILITY
-// ═══════════════════════════════════════════
+// ============================================
+//  UTILITY
+// ============================================
 function escapeHtml(t) {
     if (!t) return '';
     return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -112,86 +113,59 @@ function generateCode() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-// ═══════════════════════════════════════════
-//   SOCKET.IO
-// ═══════════════════════════════════════════
+function highlightText(text, query) {
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark style="background:var(--accent);color:#fff;padding:0 4px;border-radius:4px;">$1</mark>');
+}
+
+// ============================================
+//  SOCKET.IO
+// ============================================
 function connectSocket() {
     STATE.socket = io();
-
     STATE.socket.on('connect', () => {
         console.log('✅ متصل به سرور');
-        // ارسال اطلاعات کاربر
         if (STATE.isLoggedIn) {
             STATE.socket.emit('user_join', {
                 username: STATE.myName,
                 avatar_color: STATE.myColor,
+                avatar_url: STATE.myAvatar,
                 bio: STATE.myBio,
                 age: STATE.myAge,
                 email: STATE.myEmail
             });
         }
     });
-
-    STATE.socket.on('load_messages', (msgs) => {
-        STATE.messages = msgs || [];
+    STATE.socket.on('load_messages', (msgs) => { STATE.messages = msgs || [];
+        renderMessages(); });
+    STATE.socket.on('new_message', (msg) => { STATE.messages.push(msg);
         renderMessages();
-    });
-
-    STATE.socket.on('new_message', (msg) => {
-        STATE.messages.push(msg);
-        renderMessages();
-        scrollToBottom();
-    });
-
+        scrollToBottom(); });
     STATE.socket.on('message_updated', (msg) => {
         const idx = STATE.messages.findIndex(m => m.id === msg.id);
-        if (idx > -1) {
-            STATE.messages[idx] = msg;
-            renderMessages();
-        }
+        if (idx > -1) { STATE.messages[idx] = msg;
+            renderMessages(); }
     });
-
-    STATE.socket.on('online_count', (count) => {
-        onlineCount.textContent = `(${count} آنلاین)`;
-    });
-
-    STATE.socket.on('user_joined', (user) => {
-        showToast(`${user.username} وارد شد`, '👤', 1500);
-    });
-
-    STATE.socket.on('user_left', (id) => {
-        // می‌توانید پیام خروج نمایش دهید
-    });
-
-    STATE.socket.on('user_typing', ({ userId, username, isTyping }) => {
-        // نمایش تایپ ایندیکیتور
-    });
-
-    STATE.socket.on('disconnect', () => {
-        console.log('🔴 قطع ارتباط با سرور');
-        headerStatus.innerHTML = `<span style="color:#c47a7a;">●</span> قطع`;
-    });
+    STATE.socket.on('online_count', (count) => { onlineCount.textContent = `(${count} آنلاین)`; });
+    STATE.socket.on('user_joined', (user) => { showToast(`${user.username} وارد شد`, '👤', 1500); });
+    STATE.socket.on('spam_warning', (msg) => { showToast(msg, '⚠️', 3000); });
+    STATE.socket.on('messages_cleared', () => { showToast('🧹 تاریخچه شما پاک شد', '🧹');
+        renderMessages(); });
 }
 
-// ═══════════════════════════════════════════
-//   LOGIN
-// ═══════════════════════════════════════════
+// ============================================
+//  LOGIN
+// ============================================
 window.requestCode = function() {
     const identifier = $('login-identifier').value.trim();
-    if (!identifier) {
-        showToast('لطفاً شماره یا ایمیل را وارد کنید', '⚠️');
-        return;
-    }
+    if (!identifier) { showToast('لطفاً شماره یا ایمیل را وارد کنید', '⚠️'); return; }
     STATE.pendingIdentifier = identifier;
     const code = generateCode();
     STATE.pendingCode = code;
-
     console.log('🔑 کد تایید شما:', code);
     $('code-display').textContent = code;
-
     loginModal.classList.add('hidden');
     verifyModal.classList.remove('hidden');
-
     showToast(`کد: ${code} (در کنسول هم هست)`, '📱', 4000);
     $('verify-code').value = '';
     $('verify-code').focus();
@@ -227,38 +201,48 @@ function updateProfilePreview() {
 
 $('profile-name').addEventListener('input', updateProfilePreview);
 
+// آپلود عکس در مرحله پروفایل
+document.getElementById('avatar-input')?.addEventListener('change', async function() {
+    if (this.files.length > 0) {
+        const formData = new FormData();
+        formData.append('avatar', this.files[0]);
+        const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.url) {
+            STATE.myAvatar = data.url;
+            const av = $('profile-avatar-preview');
+            av.style.backgroundImage = `url('${data.url}')`;
+            av.style.backgroundSize = 'cover';
+            av.textContent = '';
+        }
+    }
+});
+
 window.saveProfile = function() {
     const name = $('profile-name').value.trim();
     const bio = $('profile-bio').value.trim();
     const age = $('profile-age').value.trim();
-
-    if (!name) {
-        showToast('لطفاً نام خود را وارد کنید', '⚠️');
-        return;
-    }
-
+    if (!name) { showToast('لطفاً نام خود را وارد کنید', '⚠️'); return; }
     STATE.myName = name;
     STATE.myBio = bio;
     STATE.myAge = age;
     STATE.myEmail = STATE.pendingIdentifier || '';
     STATE.myColor = randomColor();
-
     localStorage.setItem('pm_username', STATE.myName);
     localStorage.setItem('pm_bio', STATE.myBio);
     localStorage.setItem('pm_age', STATE.myAge);
     localStorage.setItem('pm_email', STATE.myEmail);
     localStorage.setItem('pm_color', STATE.myColor);
-
+    if (STATE.myAvatar) localStorage.setItem('pm_avatar', STATE.myAvatar);
     STATE.isLoggedIn = true;
     profileModal.classList.add('hidden');
-
     showToast(`خوش آمدید ${STATE.myName}`, '👋');
     initApp();
 };
 
-// ═══════════════════════════════════════════
-//   THEME & SETTINGS
-// ═══════════════════════════════════════════
+// ============================================
+//  THEME & SETTINGS
+// ============================================
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     STATE.theme = theme;
@@ -279,49 +263,41 @@ applyTheme(STATE.theme);
 applyFontSize(STATE.fontSize);
 
 document.querySelectorAll('.theme-option').forEach(el => {
-    el.addEventListener('click', function() {
-        applyTheme(this.dataset.theme);
-    });
+    el.addEventListener('click', function() { applyTheme(this.dataset.theme); });
 });
 
-$('font-size-range').addEventListener('input', function() {
-    applyFontSize(parseInt(this.value));
-});
+$('font-size-range').addEventListener('input', function() { applyFontSize(parseInt(this.value)); });
 
 window.openSettings = function() {
-    if (!STATE.isLoggedIn) {
-        showToast('لطفاً ابتدا وارد شوید', '⚠️');
-        return;
-    }
+    if (!STATE.isLoggedIn) { showToast('لطفاً ابتدا وارد شوید', '⚠️'); return; }
     settingsPanel.classList.remove('hidden');
     $('font-size-range').value = STATE.fontSize;
     $('font-size-label').textContent = STATE.fontSize;
 };
 
-window.closeSettings = function() {
-    settingsPanel.classList.add('hidden');
-};
+window.closeSettings = function() { settingsPanel.classList.add('hidden'); };
+window.saveSettings = function() { showToast('تنظیمات ذخیره شد', '✅');
+    closeSettings(); };
+settingsPanel.addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
 
-window.saveSettings = function() {
-    showToast('تنظیمات ذخیره شد', '✅');
-    closeSettings();
-};
-
-settingsPanel.addEventListener('click', function(e) {
-    if (e.target === this) closeSettings();
-});
-
-// ═══════════════════════════════════════════
-//   HEADER
-// ═══════════════════════════════════════════
+// ============================================
+//  HEADER
+// ============================================
 function updateHeader() {
     hdrAvText.textContent = avatarLetter(STATE.myName);
-    headerAv.style.background = STATE.myColor || '#c4956a';
+    if (STATE.myAvatar) {
+        headerAv.style.backgroundImage = `url('${STATE.myAvatar}')`;
+        headerAv.style.backgroundSize = 'cover';
+        hdrAvText.style.display = 'none';
+    } else {
+        headerAv.style.background = STATE.myColor || '#c4956a';
+        hdrAvText.style.display = 'flex';
+    }
 }
 
-// ═══════════════════════════════════════════
-//   RENDER MESSAGES
-// ═══════════════════════════════════════════
+// ============================================
+//  RENDER MESSAGES
+// ============================================
 function renderMessages() {
     let filtered = STATE.messages;
     if (STATE.privateChatWith) {
@@ -332,47 +308,29 @@ function renderMessages() {
             (m.is_private && m.recipient_id === STATE.privateChatWith)
         );
         if (filtered.length === 0) {
-            chatEl.innerHTML = `
-                <div style="text-align:center;color:var(--text-muted);margin-top:80px;font-size:15px;">
-                    <div style="font-size:56px;margin-bottom:16px;">🔒</div>
-                    <div style="font-weight:600;font-size:18px;">چت خصوصی</div>
-                    <div style="font-size:13px;margin-top:6px;">هنوز پیامی ارسال نشده</div>
-                </div>
-            `;
+            chatEl.innerHTML =
+                `<div style="text-align:center;color:var(--text-muted);margin-top:80px;font-size:15px;"><div style="font-size:56px;margin-bottom:16px;">🔒</div><div style="font-weight:600;font-size:18px;">چت خصوصی</div><div style="font-size:13px;margin-top:6px;">هنوز پیامی ارسال نشده</div></div>`;
             return;
         }
     } else {
         filtered = STATE.messages.filter(m => !m.is_private || m.sender_id === STATE.myId);
     }
-
     if (filtered.length === 0) {
-        chatEl.innerHTML = `
-            <div style="text-align:center;color:var(--text-muted);margin-top:80px;font-size:15px;">
-                <div style="font-size:56px;margin-bottom:16px;">💬</div>
-                <div style="font-weight:600;font-size:18px;">هنوز پیامی نیست</div>
-                <div style="font-size:13px;margin-top:6px;">اولین پیام را شما بفرستید!</div>
-            </div>
-        `;
+        chatEl.innerHTML =
+            `<div style="text-align:center;color:var(--text-muted);margin-top:80px;font-size:15px;"><div style="font-size:56px;margin-bottom:16px;">💬</div><div style="font-weight:600;font-size:18px;">هنوز پیامی نیست</div><div style="font-size:13px;margin-top:6px;">اولین پیام را شما بفرستید!</div></div>`;
         return;
     }
-
     const nearBottom = chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight < 140;
     let html = '',
         lastDate = '';
-
     filtered.forEach(msg => {
         const day = formatDate(msg.created_at || msg.timestamp);
-        if (day !== lastDate) {
-            html += `<div class="date-sep">${day}</div>`;
-            lastDate = day;
-        }
+        if (day !== lastDate) { html += `<div class="date-sep">${day}</div>`;
+            lastDate = day; }
         html += buildBubble(msg);
     });
-
     chatEl.innerHTML = html;
-    if (nearBottom || filtered.length === 0) {
-        scrollToBottom();
-    }
+    if (nearBottom || filtered.length === 0) scrollToBottom();
 }
 
 function buildBubble(msg) {
@@ -393,11 +351,8 @@ function buildBubble(msg) {
     if (msg.reply_to) {
         const ref = STATE.messages.find(m => m.id === msg.reply_to);
         if (ref && !ref.deleted) {
-            replyHtml = `
-                <div class="reply-preview" onclick="scrollToMsg('${msg.reply_to}')">
-                    <div class="reply-preview-name">${escapeHtml(ref.username || 'کاربر')}</div>
-                    <div class="reply-preview-text">${escapeHtml(truncate(ref.message || 'پیام', 60))}</div>
-                </div>`;
+            replyHtml =
+                `<div class="reply-preview" onclick="scrollToMsg('${msg.reply_to}')"><div class="reply-preview-name">${escapeHtml(ref.username || 'کاربر')}</div><div class="reply-preview-text">${escapeHtml(truncate(ref.message || 'پیام', 60))}</div></div>`;
         }
     }
 
@@ -405,26 +360,16 @@ function buildBubble(msg) {
     if (deleted) {
         content = `<span class="bubble-text" style="color:var(--text-muted);font-style:italic;">🚫 پیام حذف شد</span>`;
     } else {
-        if (msg.sticker) {
-            content += `<div class="bubble-sticker">${msg.sticker}</div>`;
-        }
-        if (msg.media) {
-            content += buildMediaHtml(msg.media);
-        }
-        if (msg.message) {
-            content += `<span class="bubble-text">${escapeHtml(msg.message)}</span>`;
-        }
-        if (!content) {
-            content = `<span class="bubble-text" style="color:var(--text-muted);">(پیام خالی)</span>`;
-        }
+        if (msg.sticker) content += `<div class="bubble-sticker">${msg.sticker}</div>`;
+        if (msg.media) content += buildMediaHtml(msg.media);
+        if (msg.message) content += `<span class="bubble-text">${escapeHtml(msg.message)}</span>`;
+        if (!content) content = `<span class="bubble-text" style="color:var(--text-muted);">(پیام خالی)</span>`;
     }
 
     let reactionsHtml = '';
     if (msg.reactions && msg.reactions.length > 0) {
         const grouped = {};
-        msg.reactions.forEach(r => {
-            grouped[r] = (grouped[r] || 0) + 1;
-        });
+        msg.reactions.forEach(r => { grouped[r] = (grouped[r] || 0) + 1; });
         reactionsHtml = `<div class="reactions">`;
         for (const [emoji, count] of Object.entries(grouped)) {
             reactionsHtml +=
@@ -435,9 +380,10 @@ function buildBubble(msg) {
 
     const editBadge = edited ? `<span class="bubble-edited" style="font-size:10px;color:var(--text-muted);">ویرایش</span>` : '';
     const isPrivate = msg.is_private ? '🔒 ' : '';
+    const levelBadge = msg.level ? `<span class="level-badge" style="background:${msg.level.color};color:#000;padding:0 8px;border-radius:10px;font-size:9px;font-weight:700;">${msg.level.name}</span>` : '';
 
     const avatarHtml = !isOwn && !deleted ?
-        `<div class="msg-avatar" style="background:${color};" onclick="showUserProfile('${msg.sender_id}')" title="مشاهده پروفایل">${avatarLetter(msg.username)}</div>` :
+        `<div class="msg-avatar" style="background:${color};${msg.avatar_url ? `background-image:url('${msg.avatar_url}');background-size:cover;` : ''}" onclick="showUserProfile('${msg.sender_id}')" title="مشاهده پروفایل">${msg.avatar_url ? '' : avatarLetter(msg.username)}</div>` :
         '';
 
     return `
@@ -447,6 +393,7 @@ function buildBubble(msg) {
             ${avatarHtml}
             <div class="bubble${deleted ? ' deleted-msg' : ''}">
                 ${nameLine}
+                ${levelBadge}
                 ${replyHtml}
                 ${content}
                 <div class="bubble-meta">
@@ -465,7 +412,6 @@ function buildMediaHtml(media) {
     const url = media.url || '#';
     const name = media.name || 'فایل';
     const size = media.size || '';
-
     if (type === 'image') {
         return `<div class="bubble-media"><img src="${url}" alt="تصویر" loading="lazy" onclick="window.open('${url}','_blank')"></div>`;
     }
@@ -489,27 +435,16 @@ function buildMediaHtml(media) {
 }
 
 function scrollToBottom() {
-    setTimeout(() => {
-        chatEl.scrollTop = chatEl.scrollHeight;
-    }, 50);
+    setTimeout(() => { chatEl.scrollTop = chatEl.scrollHeight; }, 50);
 }
 
-// ═══════════════════════════════════════════
-//   SEND MESSAGE
-// ═══════════════════════════════════════════
+// ============================================
+//  SEND MESSAGE
+// ============================================
 window.sendMessage = function() {
     const text = messageEl.value.trim();
-
-    if (!text && !fileInput.files.length) {
-        showToast('پیام یا فایل وارد کنید', '⚠️');
-        return;
-    }
-
-    if (Date.now() - STATE.lastSendTime < 1500) {
-        showToast('لطفاً کمی صبر کنید', '⏳');
-        return;
-    }
-
+    if (!text && !fileInput.files.length) { showToast('پیام یا فایل وارد کنید', '⚠️'); return; }
+    if (Date.now() - STATE.lastSendTime < 1500) { showToast('لطفاً کمی صبر کنید', '⏳'); return; }
     STATE.lastSendTime = Date.now();
 
     const msg = {
@@ -523,24 +458,17 @@ window.sendMessage = function() {
 
     if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const dataUrl = e.target.result;
-            let type = 'file';
-            if (file.type.startsWith('image/')) type = 'image';
-            else if (file.type.startsWith('video/')) type = 'video';
-            else if (file.type.startsWith('audio/')) type = 'audio';
-
-            msg.media = {
-                type: type,
-                url: dataUrl,
-                name: file.name,
-                size: (file.size / 1024).toFixed(1) + ' KB',
-            };
-            sendToSocket(msg);
-            fileInput.value = '';
-        };
-        reader.readAsDataURL(file);
+        const formData = new FormData();
+        formData.append('file', file);
+        fetch('/api/upload-file', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.url) {
+                    msg.media = { type: data.type, url: data.url, name: data.name, size: data.size };
+                    sendToSocket(msg);
+                    fileInput.value = '';
+                }
+            });
         return;
     }
 
@@ -561,18 +489,16 @@ function sendToSocket(msg) {
     }
 }
 
-// ═══════════════════════════════════════════
-//   FILE INPUT
-// ═══════════════════════════════════════════
+// ============================================
+//  FILE INPUT
+// ============================================
 fileInput.addEventListener('change', function() {
-    if (this.files.length > 0) {
-        sendMessage();
-    }
+    if (this.files.length > 0) sendMessage();
 });
 
-// ═══════════════════════════════════════════
-//   EMOJI PICKER
-// ═══════════════════════════════════════════
+// ============================================
+//  EMOJI PICKER
+// ============================================
 window.openEmojiPicker = function() {
     const grid = $('emoji-grid');
     grid.innerHTML = EMOJIS.map(e =>
@@ -584,9 +510,7 @@ window.openEmojiPicker = function() {
     $('emoji-picker').classList.remove('hidden');
 };
 
-window.closeEmojiPicker = function() {
-    $('emoji-picker').classList.add('hidden');
-};
+window.closeEmojiPicker = function() { $('emoji-picker').classList.add('hidden'); };
 
 window.insertEmoji = function(emoji) {
     const start = messageEl.selectionStart;
@@ -599,9 +523,9 @@ window.insertEmoji = function(emoji) {
     messageEl.dispatchEvent(new Event('input'));
 };
 
-// ═══════════════════════════════════════════
-//   STICKER PICKER
-// ═══════════════════════════════════════════
+// ============================================
+//  STICKER PICKER
+// ============================================
 window.openStickerPicker = function() {
     const grid = $('sticker-grid');
     grid.innerHTML = STICKERS.map(s =>
@@ -613,26 +537,18 @@ window.openStickerPicker = function() {
     $('sticker-picker').classList.remove('hidden');
 };
 
-window.closeStickerPicker = function() {
-    $('sticker-picker').classList.add('hidden');
-};
+window.closeStickerPicker = function() { $('sticker-picker').classList.add('hidden'); };
 
 window.sendSticker = function(sticker) {
     closeStickerPicker();
-    const msg = {
-        message: '',
-        sticker: sticker,
-        reply_to: STATE.replyTarget ? STATE.replyTarget.id : null,
-        is_private: !!STATE.privateChatWith,
-        recipient_id: STATE.privateChatWith || null,
-        media: null,
-    };
+    const msg = { message: '', sticker: sticker, reply_to: STATE.replyTarget ? STATE.replyTarget.id : null,
+        is_private: !!STATE.privateChatWith, recipient_id: STATE.privateChatWith || null, media: null };
     sendToSocket(msg);
 };
 
-// ═══════════════════════════════════════════
-//   CONTEXT MENU
-// ═══════════════════════════════════════════
+// ============================================
+//  CONTEXT MENU
+// ============================================
 window.handleCtxMenu = function(e, msgId) {
     e.preventDefault();
     const msg = STATE.messages.find(m => m.id === msgId);
@@ -648,16 +564,38 @@ window.handleCtxMenu = function(e, msgId) {
 
 window.handleDblClick = function(e, msgId) {
     const msg = STATE.messages.find(m => m.id === msgId);
-    if (msg && !msg.deleted) {
-        setReply(msg);
+    if (msg && msg.sender_id === STATE.myId && !msg.deleted) {
+        const bubble = e.target.closest('.bubble');
+        if (!bubble) return;
+        const textEl = bubble.querySelector('.bubble-text');
+        if (!textEl) return;
+        const currentText = msg.message || '';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.style.cssText =
+            `width:100%;padding:6px 10px;border-radius:8px;background:var(--bg-input);color:var(--text);border:2px solid var(--accent);font-family:var(--font);font-size:var(--font-size);outline:none;`;
+        textEl.replaceWith(input);
+        input.focus();
+        input.select();
+        input.addEventListener('blur', () => {
+            if (input.value.trim() && input.value.trim() !== currentText) {
+                if (STATE.socket && STATE.socket.connected) {
+                    STATE.socket.emit('edit_message', { msgId, text: input.value.trim() });
+                }
+            }
+            renderMessages();
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { input.blur(); }
+            if (e.key === 'Escape') { renderMessages(); }
+        });
     }
 };
 
 document.addEventListener('click', function(e) {
-    if (!ctxMenu.contains(e.target)) {
-        ctxMenu.classList.add('hidden');
-        STATE.ctxTarget = null;
-    }
+    if (!ctxMenu.contains(e.target)) { ctxMenu.classList.add('hidden');
+        STATE.ctxTarget = null; }
 });
 
 document.addEventListener('keydown', function(e) {
@@ -671,6 +609,8 @@ document.addEventListener('keydown', function(e) {
         closeChatList();
         closeEmojiPicker();
         closeStickerPicker();
+        closeSearch();
+        closeMenu();
         STATE.ctxTarget = null;
     }
 });
@@ -679,25 +619,16 @@ window.ctxReply = function() {
     if (STATE.ctxTarget) { setReply(STATE.ctxTarget);
         ctxMenu.classList.add('hidden'); }
 };
-
 window.ctxReact = function() {
-    if (STATE.ctxTarget) {
-        addReaction(STATE.ctxTarget.id, '❤️');
-        ctxMenu.classList.add('hidden');
-    }
+    if (STATE.ctxTarget) { addReaction(STATE.ctxTarget.id, '❤️');
+        ctxMenu.classList.add('hidden'); }
 };
-
 window.ctxCopy = function() {
     if (STATE.ctxTarget && STATE.ctxTarget.message) {
-        navigator.clipboard.writeText(STATE.ctxTarget.message).then(() => {
-            showToast('📋 کپی شد', '📋');
-        }).catch(() => {
-            showToast('کپی نشد', '❌');
-        });
+        navigator.clipboard.writeText(STATE.ctxTarget.message).then(() => { showToast('📋 کپی شد', '📋'); });
         ctxMenu.classList.add('hidden');
     }
 };
-
 window.ctxDeleteForMe = function() {
     if (STATE.ctxTarget) {
         const el = chatEl.querySelector(`[data-id="${STATE.ctxTarget.id}"]`);
@@ -706,37 +637,25 @@ window.ctxDeleteForMe = function() {
         showToast('🗑️ حذف شد', '🗑️');
     }
 };
-
 window.ctxDeleteForAll = function() {
     if (STATE.ctxTarget) {
         const msg = STATE.ctxTarget;
-        if (msg.sender_id !== STATE.myId) {
-            showToast('فقط فرستنده می‌تواند حذف کند', '❌');
-            ctxMenu.classList.add('hidden');
-            return;
-        }
-        if (!confirm('حذف برای همه؟')) {
-            ctxMenu.classList.add('hidden');
-            return;
-        }
-        if (STATE.socket && STATE.socket.connected) {
-            STATE.socket.emit('delete_for_all', msg.id);
-        }
+        if (msg.sender_id !== STATE.myId) { showToast('فقط فرستنده می‌تواند حذف کند', '❌');
+            ctxMenu.classList.add('hidden'); return; }
+        if (!confirm('حذف برای همه؟')) { ctxMenu.classList.add('hidden'); return; }
+        if (STATE.socket && STATE.socket.connected) { STATE.socket.emit('delete_for_all', msg.id); }
         ctxMenu.classList.add('hidden');
         showToast('✅ حذف شد', '✅');
     }
 };
-
 window.ctxForward = function() {
-    if (STATE.ctxTarget) {
-        showToast('به زودی اضافه می‌شود', '↗️');
-        ctxMenu.classList.add('hidden');
-    }
+    if (STATE.ctxTarget) { showToast('به زودی اضافه می‌شود', '↗️');
+        ctxMenu.classList.add('hidden'); }
 };
 
-// ═══════════════════════════════════════════
-//   REPLY
-// ═══════════════════════════════════════════
+// ============================================
+//  REPLY
+// ============================================
 function setReply(msg) {
     STATE.replyTarget = msg;
     replyBarName.textContent = msg.username || 'کاربر';
@@ -756,52 +675,46 @@ window.scrollToMsg = function(msgId) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.style.transition = 'background .3s';
         el.style.background = 'var(--bg-tertiary)';
-        setTimeout(() => {
-            el.style.background = '';
-        }, 1000);
+        setTimeout(() => { el.style.background = ''; }, 1000);
     }
 };
 
-// ═══════════════════════════════════════════
-//   REACTIONS
-// ═══════════════════════════════════════════
+// ============================================
+//  REACTIONS
+// ============================================
 window.addReaction = function(msgId, emoji) {
     if (STATE.socket && STATE.socket.connected) {
         STATE.socket.emit('add_reaction', { msgId, emoji });
     }
 };
 
-// ═══════════════════════════════════════════
-//   USER PROFILE
-// ═══════════════════════════════════════════
+// ============================================
+//  USER PROFILE
+// ============================================
 window.showUserProfile = function(userId) {
     const userMsg = STATE.messages.find(m => m.sender_id === userId);
-    if (!userMsg) {
-        showToast('اطلاعات کاربر در دسترس نیست', '⚠️');
-        return;
-    }
-
+    if (!userMsg) { showToast('اطلاعات کاربر در دسترس نیست', '⚠️'); return; }
     const popupAv = $('popup-avatar');
-    popupAv.textContent = avatarLetter(userMsg.username);
-    popupAv.style.background = userMsg.avatar_color || '#c4956a';
-
+    if (userMsg.avatar_url) {
+        popupAv.style.backgroundImage = `url('${userMsg.avatar_url}')`;
+        popupAv.style.backgroundSize = 'cover';
+        popupAv.textContent = '';
+    } else {
+        popupAv.textContent = avatarLetter(userMsg.username);
+        popupAv.style.background = userMsg.avatar_color || '#c4956a';
+    }
     $('popup-name').textContent = userMsg.username || 'کاربر';
     $('popup-bio').textContent = userMsg.bio || 'بیوگرافی موجود نیست';
     $('popup-age').textContent = userMsg.age ? `🎂 ${userMsg.age} سال` : '';
     $('popup-email').innerHTML = userMsg.email ?
         `📧 <a href="mailto:${escapeHtml(userMsg.email)}" style="color:var(--accent-light);text-decoration:none;">${escapeHtml(userMsg.email)}</a>` :
         '';
-
     STATE._popupUserId = userId;
     STATE._popupUsername = userMsg.username;
-    STATE._popupColor = userMsg.avatar_color;
-
     userPopup.classList.remove('hidden');
 };
 
-window.closeUserPopup = function() {
-    userPopup.classList.add('hidden');
-};
+window.closeUserPopup = function() { userPopup.classList.add('hidden'); };
 
 window.startPrivateChat = function() {
     if (STATE._popupUserId) {
@@ -827,17 +740,20 @@ window.startPrivateChat = function() {
     }
 };
 
-// ═══════════════════════════════════════════
-//   MY PROFILE
-// ═══════════════════════════════════════════
+// ============================================
+//  MY PROFILE
+// ============================================
 window.openMyProfile = function() {
-    if (!STATE.isLoggedIn) {
-        showToast('لطفاً وارد شوید', '⚠️');
-        return;
-    }
+    if (!STATE.isLoggedIn) { showToast('لطفاً وارد شوید', '⚠️'); return; }
     const av = $('my-profile-avatar');
-    av.textContent = avatarLetter(STATE.myName);
-    av.style.background = STATE.myColor || '#c4956a';
+    if (STATE.myAvatar) {
+        av.style.backgroundImage = `url('${STATE.myAvatar}')`;
+        av.style.backgroundSize = 'cover';
+        av.textContent = '';
+    } else {
+        av.textContent = avatarLetter(STATE.myName);
+        av.style.background = STATE.myColor || '#c4956a';
+    }
     $('my-profile-name').textContent = STATE.myName || 'نام تنظیم نشده';
     $('my-profile-bio').textContent = STATE.myBio || 'بیوگرافی تنظیم نشده';
     $('my-profile-age').textContent = STATE.myAge ? `${STATE.myAge} سال` : 'سن تنظیم نشده';
@@ -845,164 +761,295 @@ window.openMyProfile = function() {
     $('my-profile-modal').classList.remove('hidden');
 };
 
-window.closeMyProfile = function() {
-    $('my-profile-modal').classList.add('hidden');
-};
+window.closeMyProfile = function() { $('my-profile-modal').classList.add('hidden'); };
+
+// آپلود عکس در پروفایل
+document.getElementById('avatar-input-edit')?.addEventListener('change', async function() {
+    if (this.files.length > 0) {
+        const formData = new FormData();
+        formData.append('avatar', this.files[0]);
+        const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.url) {
+            STATE.myAvatar = data.url;
+            localStorage.setItem('pm_avatar', data.url);
+            updateHeader();
+            const av = $('my-profile-avatar');
+            av.style.backgroundImage = `url('${data.url}')`;
+            av.style.backgroundSize = 'cover';
+            av.textContent = '';
+            if (STATE.socket) {
+                STATE.socket.emit('user_join', {
+                    username: STATE.myName,
+                    avatar_color: STATE.myColor,
+                    avatar_url: data.url,
+                    bio: STATE.myBio,
+                    age: STATE.myAge,
+                    email: STATE.myEmail
+                });
+            }
+            showToast('✅ عکس پروفایل به‌روز شد', '📸');
+        }
+    }
+    this.value = '';
+});
 
 window.editMyProfile = function() {
     closeMyProfile();
     $('edit-profile-name').value = STATE.myName || '';
     $('edit-profile-bio').value = STATE.myBio || '';
     $('edit-profile-age').value = STATE.myAge || '';
-    $('edit-profile-avatar').textContent = avatarLetter(STATE.myName);
-    $('edit-profile-avatar').style.background = STATE.myColor || '#c4956a';
+    const av = $('edit-profile-avatar');
+    if (STATE.myAvatar) {
+        av.style.backgroundImage = `url('${STATE.myAvatar}')`;
+        av.style.backgroundSize = 'cover';
+        av.textContent = '';
+    } else {
+        av.textContent = avatarLetter(STATE.myName);
+        av.style.background = STATE.myColor || '#c4956a';
+    }
     $('edit-profile-modal').classList.remove('hidden');
 };
 
-window.closeEditProfile = function() {
-    $('edit-profile-modal').classList.add('hidden');
-};
+window.closeEditProfile = function() { $('edit-profile-modal').classList.add('hidden'); };
 
 window.saveEditProfile = function() {
     const name = $('edit-profile-name').value.trim();
     const bio = $('edit-profile-bio').value.trim();
     const age = $('edit-profile-age').value.trim();
-
-    if (!name) {
-        showToast('نام نمی‌تواند خالی باشد', '⚠️');
-        return;
-    }
-
+    if (!name) { showToast('نام نمی‌تواند خالی باشد', '⚠️'); return; }
     STATE.myName = name;
     STATE.myBio = bio;
     STATE.myAge = age;
-
     localStorage.setItem('pm_username', STATE.myName);
     localStorage.setItem('pm_bio', STATE.myBio);
     localStorage.setItem('pm_age', STATE.myAge);
-
-    // به‌روزرسانی در سرور
-    if (STATE.socket && STATE.socket.connected) {
+    if (STATE.socket) {
         STATE.socket.emit('user_join', {
             username: STATE.myName,
             avatar_color: STATE.myColor,
+            avatar_url: STATE.myAvatar,
             bio: STATE.myBio,
             age: STATE.myAge,
             email: STATE.myEmail
         });
     }
-
     updateHeader();
     closeEditProfile();
     showToast('پروفایل به‌روز شد', '✅');
     renderMessages();
 };
 
-// ═══════════════════════════════════════════
-//   CHAT LIST
-// ═══════════════════════════════════════════
+// ============================================
+//  CHAT LIST (مخاطبین)
+// ============================================
 window.openChatList = function() {
     $('chat-list-modal').classList.remove('hidden');
-    updatePrivateChatsList();
+    updateContacts();
 };
 
-window.closeChatList = function() {
-    $('chat-list-modal').classList.add('hidden');
-};
+window.closeChatList = function() { $('chat-list-modal').classList.add('hidden'); };
 
-function updatePrivateChatsList() {
-    const container = $('private-chats-list');
-    const users = new Map();
+function updateContacts() {
+    const container = $('contacts-list');
+    const contactMap = new Map();
     STATE.messages.forEach(m => {
-        if (m.is_private && m.sender_id !== STATE.myId) {
-            users.set(m.sender_id, { username: m.username, avatar_color: m.avatar_color });
+        if (m.sender_id !== STATE.myId && !m.is_private) {
+            contactMap.set(m.sender_id, {
+                id: m.sender_id,
+                username: m.username,
+                avatar_color: m.avatar_color,
+                avatar_url: m.avatar_url,
+                lastMessage: m.message,
+                lastTime: m.created_at,
+                bio: m.bio,
+                age: m.age,
+                level: m.level || { name: '🌱 جدید', color: '#90EE90' }
+            });
         }
-        if (m.is_private && m.recipient_id !== STATE.myId && m.recipient_id) {
-            users.set(m.recipient_id, { username: m.username || 'کاربر', avatar_color: m.avatar_color });
+        if (m.is_private && m.sender_id !== STATE.myId) {
+            contactMap.set(m.sender_id, {
+                id: m.sender_id,
+                username: m.username,
+                avatar_color: m.avatar_color,
+                avatar_url: m.avatar_url,
+                lastMessage: m.message,
+                lastTime: m.created_at,
+                bio: m.bio,
+                age: m.age,
+                level: m.level || { name: '🌱 جدید', color: '#90EE90' }
+            });
         }
     });
-
-    if (users.size === 0) {
+    if (contactMap.size === 0) {
         container.innerHTML =
-            '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:12px;">چت خصوصی فعالی ندارید</div>';
+            `<div style="text-align:center;color:var(--text-muted);padding:30px;"><div style="font-size:40px;margin-bottom:10px;">👥</div><div>هنوز با کسی چت نکرده‌اید</div><div style="font-size:12px;margin-top:4px;">برای شروع، روی آواتار کاربران کلیک کنید</div></div>`;
         return;
     }
-
-    container.innerHTML = '';
-    users.forEach((user, id) => {
-        const div = document.createElement('div');
-        div.style.cssText =
-            'display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:var(--transition);';
-        div.onmouseover = function() { this.style.background = 'var(--bg-tertiary)'; };
-        div.onmouseout = function() { this.style.background = 'var(--bg-input)'; };
-        div.onclick = function() {
-            STATE.privateChatWith = id;
-            closeChatList();
-            headerTitle.textContent = `💬 ${user.username || 'کاربر'}`;
-            renderMessages();
-            showToast(`چت با ${user.username || 'کاربر'}`, '💬');
-        };
-        div.innerHTML = `
-            <div style="width:40px;height:40px;border-radius:50%;background:${user.avatar_color || '#c4956a'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;">${avatarLetter(user.username)}</div>
-            <div style="flex:1;"><div style="font-weight:600;">${escapeHtml(user.username || 'کاربر')}</div><div style="font-size:11px;color:var(--text-muted);">چت خصوصی</div></div>
-            <div style="font-size:12px;color:var(--text-muted);">💬</div>
-        `;
-        container.appendChild(div);
-    });
+    const sorted = Array.from(contactMap.values()).sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+    container.innerHTML = sorted.map(contact => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:var(--transition);"
+             onmouseover="this.style.background='var(--bg-tertiary)'" 
+             onmouseout="this.style.background='var(--bg-input)'"
+             onclick="startChatWith('${contact.id}')">
+            <div style="position:relative;">
+                <div style="width:44px;height:44px;border-radius:50%;background:${contact.avatar_color || '#c4956a'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;flex-shrink:0;${contact.avatar_url ? `background-image:url('${contact.avatar_url}');background-size:cover;` : ''}">
+                    ${contact.avatar_url ? '' : avatarLetter(contact.username)}
+                </div>
+                <span style="position:absolute;bottom:0;right:0;width:12px;height:12px;background:#6B8F71;border-radius:50%;border:2px solid var(--bg-input);"></span>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:600;font-size:14px;">${escapeHtml(contact.username)}</div>
+                    <span style="font-size:10px;color:var(--text-muted);">${formatTime(contact.lastTime)}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;gap:6px;align-items:center;">
+                    <span style="font-size:9px;background:${contact.level.color};color:#000;padding:0 8px;border-radius:10px;font-weight:700;">${contact.level.name}</span>
+                    ${contact.lastMessage ? truncate(contact.lastMessage, 30) : '...'}
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
 
-window.scrollToTop = function() {
-    chatEl.scrollTop = 0;
+window.startChatWith = function(userId) {
+    STATE.privateChatWith = userId;
+    const user = STATE.messages.find(m => m.sender_id === userId);
+    if (user) headerTitle.textContent = `💬 ${user.username || 'کاربر'}`;
+    closeChatList();
+    renderMessages();
+    showToast(`💬 چت خصوصی شروع شد`, '💬');
 };
 
-// ═══════════════════════════════════════════
-//   TEXTAREA EVENTS
-// ═══════════════════════════════════════════
+window.filterContacts = function(query) {
+    const items = document.querySelectorAll('#contacts-list > div');
+    items.forEach(item => {
+        const name = item.querySelector('[style*="font-weight:600"]')?.textContent || '';
+        item.style.display = name.toLowerCase().includes(query.toLowerCase()) ? 'flex' : 'none';
+    });
+};
+
+// ============================================
+//  SEARCH
+// ============================================
+window.openSearch = function() {
+    $('search-modal').classList.remove('hidden');
+    $('search-input').value = '';
+    $('search-results').innerHTML = '';
+    $('search-input').focus();
+};
+
+window.closeSearch = function() { $('search-modal').classList.add('hidden'); };
+
+window.searchMessages = function(query) {
+    const results = $('search-results');
+    if (!query.trim()) {
+        results.innerHTML =
+            '<div style="text-align:center;color:var(--text-muted);padding:20px;">عبارت جستجو را وارد کنید</div>';
+        return;
+    }
+    const filtered = STATE.messages.filter(m => m.message?.toLowerCase().includes(query.toLowerCase()) && !m.deleted);
+    if (filtered.length === 0) {
+        results.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">نتیجه‌ای یافت نشد</div>';
+        return;
+    }
+    results.innerHTML = filtered.slice(0, 20).map(m => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--transition);"
+             onmouseover="this.style.background='var(--bg-tertiary)'" 
+             onmouseout="this.style.background='transparent'"
+             onclick="scrollToMsg('${m.id}');closeSearch();">
+            <div style="width:36px;height:36px;border-radius:50%;background:${m.avatar_color || '#c4956a'};display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;flex-shrink:0;${m.avatar_url ? `background-image:url('${m.avatar_url}');background-size:cover;` : ''}">
+                ${m.avatar_url ? '' : avatarLetter(m.username)}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:13px;">${escapeHtml(m.username)}</div>
+                <div style="font-size:12px;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+                    ${highlightText(escapeHtml(m.message || ''), query)}
+                </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${formatTime(m.created_at)}</div>
+        </div>
+    `).join('');
+};
+
+// ============================================
+//  MENU (سه نقطه)
+// ============================================
+window.openMenu = function() { $('menu-modal').classList.remove('hidden'); };
+window.closeMenu = function() { $('menu-modal').classList.add('hidden'); };
+
+window.clearMyMessages = function() {
+    if (!confirm('همه پیام‌های شما حذف می‌شوند. ادامه؟')) return;
+    if (STATE.socket && STATE.socket.connected) {
+        STATE.socket.emit('clear_my_messages');
+        showToast('🧹 تاریخچه شما پاک شد', '🧹');
+    }
+};
+
+window.exportChat = function() {
+    const filtered = STATE.messages.filter(m => !m.deleted);
+    if (filtered.length === 0) { showToast('هیچ پیامی برای خروجی وجود ندارد', '⚠️'); return; }
+    let text = '📋 خروجی چت - گپ گروهی\n';
+    text += '='.repeat(40) + '\n';
+    text += `📅 تاریخ: ${new Date().toLocaleDateString('fa-IR')}\n`;
+    text += `👤 کاربر: ${STATE.myName}\n`;
+    text += `📝 تعداد پیام‌ها: ${filtered.length}\n`;
+    text += '='.repeat(40) + '\n\n';
+    filtered.forEach(m => {
+        const time = formatTime(m.created_at);
+        const name = m.username || 'کاربر';
+        const msg = m.deleted ? '🚫 [حذف شده]' : (m.message || m.sticker || '📎 فایل');
+        text += `[${time}] ${name}: ${msg}\n`;
+    });
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat_export_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📤 خروجی چت دانلود شد', '📤');
+};
+
+// ============================================
+//  TEXTAREA EVENTS
+// ============================================
 messageEl.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     const len = this.value.length;
-    if (len === 0) {
-        counterEl.textContent = '';
-        counterEl.className = '';
-    } else if (len >= 450) {
-        counterEl.textContent = `${len}/500`;
-        counterEl.className = 'danger';
-    } else if (len >= 350) {
-        counterEl.textContent = `${len}/500`;
-        counterEl.className = 'warn';
-    } else {
-        counterEl.textContent = '';
-        counterEl.className = '';
-    }
-
-    // تایپینگ
+    if (len === 0) { counterEl.textContent = '';
+        counterEl.className = ''; } else if (len >= 450) { counterEl.textContent = `${len}/500`;
+        counterEl.className = 'danger'; } else if (len >= 350) { counterEl.textContent = `${len}/500`;
+        counterEl.className = 'warn'; } else { counterEl.textContent = '';
+        counterEl.className = ''; }
     if (STATE.socket && STATE.socket.connected) {
         STATE.socket.emit('typing', { isTyping: this.value.length > 0 });
     }
 });
 
 messageEl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+        sendMessage(); }
 });
 
 $('verify-code').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') verifyCode();
 });
-
 $('login-identifier').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') requestCode();
 });
 
-// ═══════════════════════════════════════════
-//   INIT
-// ═══════════════════════════════════════════
+// ============================================
+//  SCROLL TO TOP
+// ============================================
+window.scrollToTop = function() { chatEl.scrollTop = 0; };
+
+// ============================================
+//  INIT
+// ============================================
 function initApp() {
     updateHeader();
-
     if (STATE.myName) {
         STATE.isLoggedIn = true;
         loginModal.classList.add('hidden');
@@ -1014,10 +1061,8 @@ function initApp() {
     } else {
         loginModal.classList.remove('hidden');
     }
-
     headerStatus.innerHTML = `<span class="dot"></span><span>آنلاین</span>`;
-
-    console.log('🚀 Persia Messenger v3.0');
+    console.log('🚀 Persia Messenger v4.0');
     console.log('👤 کاربر:', STATE.myName || '未登录');
     console.log('🆔 شناسه:', STATE.myId);
     console.log('🎨 تم:', STATE.theme);
@@ -1027,5 +1072,5 @@ function initApp() {
 document.documentElement.style.setProperty('--font-family', "'Inter', -apple-system, sans-serif");
 initApp();
 
-console.log('✨ گپ گروهی - نسخه لوکس با WebSocket');
+console.log('✨ گپ گروهی - نسخه کامل با همه امکانات');
 console.log('📱 برای ورود، روی "دریافت کد" کلیک کنید و کد را از کنسول بگیرید.');
