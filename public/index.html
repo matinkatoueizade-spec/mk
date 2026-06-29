@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0c0a09" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#0c0a09" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    
     <title>گپ گروهی</title>
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -125,7 +136,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         منوی راست‌کلیک - کامل
+         منوی راست‌کلیک
     ═══════════════════════════════════════════ -->
     <div id="ctx-menu" class="hidden">
         <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩️</span> پاسخ</div>
@@ -196,34 +207,34 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         مودال منوی بیشتر - امکانات کامل
+         مودال منوی بیشتر
     ═══════════════════════════════════════════ -->
     <div id="menu-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeMenu()">
         <div class="modal-box" style="max-width:380px;padding:20px;">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-                <button class="menu-item" onclick="clearMyMessages();closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
+                <button class="menu-item" onclick="clearMyMessages();closeMenu();">
                     <div style="font-size:24px;">🧹</div>
                     <div style="font-size:11px;font-weight:500;">پاک کردن تاریخچه</div>
                 </button>
-                <button class="menu-item" onclick="openSearch();closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
+                <button class="menu-item" onclick="openSearch();closeMenu();">
                     <div style="font-size:24px;">🔍</div>
                     <div style="font-size:11px;font-weight:500;">جستجو</div>
                 </button>
-                <button class="menu-item" onclick="exportChat();closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
+                <button class="menu-item" onclick="exportChat();closeMenu();">
                     <div style="font-size:24px;">📤</div>
                     <div style="font-size:11px;font-weight:500;">خروجی چت</div>
                 </button>
-                <button class="menu-item" onclick="showToast('🎨 رنگ‌بندی بیشتر به زودی','🎨');closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
-                    <div style="font-size:24px;">🎨</div>
-                    <div style="font-size:11px;font-weight:500;">رنگ‌بندی بیشتر</div>
+                <button class="menu-item" onclick="installApp();closeMenu();">
+                    <div style="font-size:24px;">📲</div>
+                    <div style="font-size:11px;font-weight:500;">نصب برنامه</div>
                 </button>
-                <button class="menu-item" onclick="showToast('📱 نسخه 4.0 - کامل','📱');closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
+                <button class="menu-item" onclick="showToast('📱 نسخه 5.0 - کامل','📱');closeMenu();">
                     <div style="font-size:24px;">📱</div>
                     <div style="font-size:11px;font-weight:500;">درباره</div>
                 </button>
-                <button class="menu-item" onclick="showToast('🔊 به زودی اضافه می‌شود','🔊');closeMenu();" style="padding:12px;border-radius:var(--radius);background:var(--bg-input);border:1px solid var(--border);cursor:pointer;transition:var(--transition);font-family:var(--font);color:var(--text);text-align:center;">
-                    <div style="font-size:24px;">🔊</div>
-                    <div style="font-size:11px;font-weight:500;">پیام صوتی</div>
+                <button class="menu-item" onclick="showToast('🎨 رنگ‌بندی بیشتر به زودی','🎨');closeMenu();">
+                    <div style="font-size:24px;">🎨</div>
+                    <div style="font-size:11px;font-weight:500;">رنگ‌بندی بیشتر</div>
                 </button>
             </div>
             <button class="ghost-btn" onclick="closeMenu()" style="margin-top:12px;">✕ بستن</button>
@@ -242,7 +253,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         ایموجی‌پیکر (بیشتر)
+         ایموجی‌پیکر
     ═══════════════════════════════════════════ -->
     <div id="emoji-picker" class="modal-overlay hidden" onclick="if(event.target===this)closeEmojiPicker()">
         <div class="modal-box" style="max-width:420px;padding:20px;">
@@ -253,7 +264,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         استیکرپیکر (بیشتر)
+         استیکرپیکر
     ═══════════════════════════════════════════ -->
     <div id="sticker-picker" class="modal-overlay hidden" onclick="if(event.target===this)closeStickerPicker()">
         <div class="modal-box" style="max-width:420px;padding:20px;">
@@ -264,7 +275,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         پاپ‌آپ پروفایل کاربران (کامل)
+         پاپ‌آپ پروفایل کاربران
     ═══════════════════════════════════════════ -->
     <div id="user-popup" class="modal-overlay hidden">
         <div class="user-popup-box">
@@ -282,7 +293,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         پروفایل من (کامل با ویرایش)
+         پروفایل من
     ═══════════════════════════════════════════ -->
     <div id="my-profile-modal" class="modal-overlay hidden">
         <div class="modal-box">
@@ -346,7 +357,21 @@
     <!-- ═══════════════════════════════════════════
          اسکریپت‌ها
     ═══════════════════════════════════════════ -->
+    <script>
+        // تشخیص PWA و تنظیم آدرس سرور
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const SERVER_URL = isPWA ? 'http://YOUR_SERVER_IP:3000' : window.location.origin;
+        console.log('📱 حالت PWA:', isPWA);
+        console.log('🌐 سرور:', SERVER_URL);
+        
+        // ثبت Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('✅ Service Worker ثبت شد'))
+                .catch(err => console.log('❌ خطا در ثبت SW:', err));
+        }
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="app.js"></script>
 </body>
-</html>
+                </html>
