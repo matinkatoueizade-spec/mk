@@ -1,1013 +1,212 @@
-const socket = io();
-
-/* =========================
-Elements
-========================= */
-
-const messagesBox =
-document.getElementById("messages");
-
-const messageInput =
-document.getElementById("messageInput");
-
-const sendBtn =
-document.getElementById("sendBtn");
-
-const onlineCount =
-document.getElementById("onlineCount");
-
-const loadingScreen =
-document.getElementById("loadingScreen");
-
-/* =========================
-Username
-========================= */
-
-let username =
-localStorage.getItem(
-"chat_username"
-);
-
-if(!username){
-
-username = prompt(
-"نام کاربری:"
-);
-
-if(
-!username ||
-!username.trim()
-){
-
-username =
-"مهمان_" +
-Math.floor(
-Math.random()*9999
-);
-
-}
-
-localStorage.setItem(
-"chat_username",
-username
-);
-
-}
-
-socket.emit(
-"join",
-username
-);
-
-/* =========================
-Loading
-========================= */
-
-window.addEventListener(
-"load",
-()=>{
-
-setTimeout(()=>{
-
-if(loadingScreen){
-
-loadingScreen.style.display =
-"none";
-
-}
-
-},1200);
-
-}
-);
-
-/* =========================
-Send Message
-========================= */
-
-function sendMessage(){
-
-const text =
-messageInput.value.trim();
-
-if(!text) return;
-
-socket.emit(
-"chatMessage",
-text
-);
-
-messageInput.value = "";
-
-}
-
-sendBtn.addEventListener(
-"click",
-sendMessage
-);
-
-messageInput.addEventListener(
-"keydown",
-(e)=>{
-
-if(
-e.key === "Enter"
-){
-
-sendMessage();
-
-}
-
-}
-);
-
-/* =========================
-Message Render
-========================= */
-
-function createMessage(
-msg,
-isMe
-){
-
-const div =
-document.createElement(
-"div"
-);
-
-div.className =
-isMe
-? "message me"
-: "message other";
-
-const time =
-new Date(
-msg.time
-).toLocaleTimeString(
-"fa-IR",
-{
-hour:"2-digit",
-minute:"2-digit"
-}
-);
-
-div.innerHTML = `
-
-<div class="username">
-${msg.user}
-</div><div class="message-text">
-${msg.text}
-</div><div class="time">
-${time}
-</div>`;
-
-messagesBox.appendChild(
-div
-);
-
-messagesBox.scrollTop =
-messagesBox.scrollHeight;
-
-}
-
-/* =========================
-System Message
-========================= */
-
-function createSystemMessage(
-text
-){
-
-const div =
-document.createElement(
-"div"
-);
-
-div.className =
-"system";
-
-div.textContent =
-text;
-
-messagesBox.appendChild(
-div
-);
-
-messagesBox.scrollTop =
-messagesBox.scrollHeight;
-
-}
-
-/* =========================
-Receive Messages
-========================= */
-
-socket.on(
-"chatMessage",
-(msg)=>{
-
-createMessage(
-msg,
-msg.user === username
-);
-
-}
-);
-
-/* =========================
-History
-========================= */
-
-socket.on(
-"messageHistory",
-(history)=>{
-
-messagesBox.innerHTML = "";
-
-history.forEach(
-(msg)=>{
-
-createMessage(
-msg,
-msg.user === username
-);
-
-}
-);
-
-}
-);
-
-/* =========================
-System Events
-========================= */
-
-socket.on(
-"systemMessage",
-(data)=>{
-
-if(
-typeof data ===
-"string"
-){
-
-createSystemMessage(
-data
-);
-
-}else{
-
-createSystemMessage(
-data.text
-);
-
-}
-
-}
-);
-/* =========================
-Online Users
-========================= */
-
-socket.on(
-"usersList",
-(users)=>{
-
-onlineCount.textContent =
-users.length;
-
-}
-);
-
-/* =========================
-Typing System
-========================= */
-
-const typingArea =
-document.getElementById(
-"typingArea"
-);
-
-let typingTimeout;
-
-messageInput.addEventListener(
-"input",
-()=>{
-
-socket.emit(
-"typing"
-);
-
-clearTimeout(
-typingTimeout
-);
-
-typingTimeout =
-setTimeout(()=>{
-
-socket.emit(
-"stopTyping"
-);
-
-},1500);
-
-}
-);
-
-socket.on(
-"typing",
-(data)=>{
-
-typingArea.textContent =
-data.user +
-" در حال تایپ است...";
-
-}
-);
-
-socket.on(
-"stopTyping",
-()=>{
-
-typingArea.textContent =
-"";
-
-}
-);
-
-/* =========================
-Settings Panel
-========================= */
-
-const settingsBtn =
-document.getElementById(
-"settingsBtn"
-);
-
-const settingsPanel =
-document.getElementById(
-"settingsPanel"
-);
-
-if(
-settingsBtn &&
-settingsPanel
-){
-
-settingsBtn.addEventListener(
-"click",
-()=>{
-
-settingsPanel.classList.toggle(
-"show"
-);
-
-}
-);
-
-}
-
-/* =========================
-Dark Mode
-========================= */
-
-const darkModeSwitch =
-document.getElementById(
-"darkModeSwitch"
-);
-
-const savedTheme =
-localStorage.getItem(
-"theme"
-);
-
-if(
-savedTheme === "light"
-){
-
-document.body.classList.add(
-"light"
-);
-
-if(darkModeSwitch){
-
-darkModeSwitch.classList.remove(
-"active"
-);
-
-}
-
-}
-
-if(darkModeSwitch){
-
-darkModeSwitch.addEventListener(
-"click",
-()=>{
-
-darkModeSwitch.classList.toggle(
-"active"
-);
-
-document.body.classList.toggle(
-"light"
-);
-
-localStorage.setItem(
-"theme",
-document.body.classList.contains(
-"light"
-)
-? "light"
-: "dark"
-);
-
-}
-);
-
-}
-/* =========================
-Toast Notification
-========================= */
-
-const toast =
-document.getElementById(
-"toast"
-);
-
-function showToast(
-text
-){
-
-if(!toast) return;
-
-toast.textContent =
-text;
-
-toast.classList.add(
-"show"
-);
-
-setTimeout(()=>{
-
-toast.classList.remove(
-"show"
-);
-
-},3000);
-
-}
-
-/* =========================
-Browser Notification
-========================= */
-
-if(
-"Notification"
-in window
-){
-
-Notification.requestPermission();
-
-}
-
-function pushNotification(
-title,
-body
-){
-
-if(
-localStorage.getItem(
-"notify"
-) === "off"
-){
-
-return;
-
-}
-
-if(
-Notification.permission ===
-"granted"
-){
-
-new Notification(
-title,
-{
-body
-}
-);
-
-}
-
-}
-
-/* =========================
-Message Sound
-========================= */
-
-const messageAudio =
-new Audio(
-"https://actions.google.com/sounds/v1/cartoon/pop.ogg"
-);
-
-function playMessageSound(){
-
-messageAudio.currentTime = 0;
-
-messageAudio.play()
-.catch(()=>{});
-
-}
-
-/* =========================
-Incoming Messages
-========================= */
-
-socket.on(
-"chatMessage",
-(msg)=>{
-
-if(
-msg.user !== username
-){
-
-playMessageSound();
-
-pushNotification(
-msg.user,
-msg.text
-);
-
-}
-
-}
-);
-
-/* =========================
-Profile Modal
-========================= */
-
-const profileBtn =
-document.getElementById(
-"profileBtn"
-);
-
-const profileModal =
-document.getElementById(
-"profileModal"
-);
-
-const closeProfile =
-document.getElementById(
-"closeProfile"
-);
-
-const profileName =
-document.getElementById(
-"profileName"
-);
-
-const profileAvatar =
-document.getElementById(
-"profileAvatar"
-);
-
-if(
-profileBtn &&
-profileModal
-){
-
-profileBtn.addEventListener(
-"click",
-()=>{
-
-profileName.textContent =
-username;
-
-profileAvatar.textContent =
-username.charAt(0)
-.toUpperCase();
-
-profileModal.classList.add(
-"show"
-);
-
-}
-);
-
-}
-
-if(closeProfile){
-
-closeProfile.addEventListener(
-"click",
-()=>{
-
-profileModal.classList.remove(
-"show"
-);
-
-}
-);
-
-}
-
-/* =========================
-Notification Switch
-========================= */
-
-const notificationSwitch =
-document.getElementById(
-"notificationSwitch"
-);
-
-if(notificationSwitch){
-
-const notifyState =
-localStorage.getItem(
-"notify"
-);
-
-if(
-notifyState !== "off"
-){
-
-notificationSwitch.classList.add(
-"active"
-);
-
-}
-
-notificationSwitch.addEventListener(
-"click",
-()=>{
-
-notificationSwitch.classList.toggle(
-"active"
-);
-
-const enabled =
-notificationSwitch.classList.contains(
-"active"
-);
-
-localStorage.setItem(
-"notify",
-enabled
-? "on"
-: "off"
-);
-
-showToast(
-enabled
-? "🔔 اعلان‌ها فعال شد"
-: "🔕 اعلان‌ها غیرفعال شد"
-);
-
-}
-);
-
-}
-
-/* =========================
-Welcome Toast
-========================= */
-
-setTimeout(()=>{
-
-showToast(
-"👋 خوش آمدی " +
-username
-);
-
-},1500);
-/* =========================
-Users Panel
-========================= */
-
-const usersList =
-document.getElementById(
-"usersList"
-);
-
-const userSearch =
-document.getElementById(
-"userSearch"
-);
-
-let allUsers = [];
-
-/* =========================
-Render Users
-========================= */
-
-function renderUsers(){
-
-if(!usersList) return;
-
-usersList.innerHTML = "";
-
-allUsers.forEach(user=>{
-
-const item =
-document.createElement(
-"div"
-);
-
-item.className =
-"user-item";
-
-const avatar =
-user.username
-.charAt(0)
-.toUpperCase();
-
-item.innerHTML = `
-
-<div class="user-avatar">
-${avatar}
-</div><div class="user-info"><div class="user-name">
-${user.username}
-</div><div class="user-status">
-آنلاین
-</div></div><div class="user-online">
-</div>`;
-
-usersList.appendChild(
-item
-);
-
-});
-
-}
-
-/* =========================
-Receive Users
-========================= */
-
-socket.on(
-"usersList",
-(users)=>{
-
-allUsers = users;
-
-onlineCount.textContent =
-users.length;
-
-renderUsers();
-
-}
-);
-
-/* =========================
-Search Users
-========================= */
-
-if(userSearch){
-
-userSearch.addEventListener(
-"input",
-()=>{
-
-const value =
-userSearch.value
-.toLowerCase()
-.trim();
-
-const items =
-document.querySelectorAll(
-".user-item"
-);
-
-items.forEach(item=>{
-
-const name =
-item.querySelector(
-".user-name"
-)
-.textContent
-.toLowerCase();
-
-item.style.display =
-name.includes(value)
-? "flex"
-: "none";
-
-});
-
-}
-);
-
-}
-
-/* =========================
-User Join Toast
-========================= */
-
-socket.on(
-"systemMessage",
-(data)=>{
-
-const text =
-typeof data === "string"
-? data
-: data.text;
-
-if(
-text.includes("وارد شد")
-){
-
-showToast(
-"🎉 کاربر جدید وارد شد"
-);
-
-}
-
-}
-);
-/* =========================
-ESC Close Panels
-========================= */
-
-document.addEventListener(
-"keydown",
-(e)=>{
-
-if(
-e.key === "Escape"
-){
-
-if(profileModal){
-
-profileModal.classList.remove(
-"show"
-);
-
-}
-
-if(settingsPanel){
-
-settingsPanel.classList.remove(
-"show"
-);
-
-}
-
-}
-
-}
-);
-
-/* =========================
-Close Modal By Click
-========================= */
-
-window.addEventListener(
-"click",
-(e)=>{
-
-if(
-profileModal &&
-e.target === profileModal
-){
-
-profileModal.classList.remove(
-"show"
-);
-
-}
-
-}
-);
-
-/* =========================
-Auto Focus
-========================= */
-
-window.addEventListener(
-"load",
-()=>{
-
-setTimeout(()=>{
-
-if(messageInput){
-
-messageInput.focus();
-
-}
-
-},300);
-
-}
-);
-
-/* =========================
-Connection Events
-========================= */
-
-socket.on(
-"connect",
-()=>{
-
-showToast(
-"🟢 اتصال برقرار شد"
-);
-
-}
-);
-
-socket.on(
-"disconnect",
-()=>{
-
-showToast(
-"🔴 ارتباط با سرور قطع شد"
-);
-
-}
-);
-
-/* =========================
-Error Messages
-========================= */
-
-socket.on(
-"errorMessage",
-(text)=>{
-
-showToast(
-text
-);
-
-}
-);
-
-/* =========================
-Prevent Empty Spaces
-========================= */
-
-messageInput.addEventListener(
-"paste",
-()=>{
-
-setTimeout(()=>{
-
-messageInput.value =
-messageInput.value.replace(
-/\s{3,}/g,
-" "
-);
-
-},10);
-
-}
-);
-
-/* =========================
-Character Counter
-========================= */
-
-const maxChars = 500;
-
-messageInput.addEventListener(
-"input",
-()=>{
-
-if(
-messageInput.value.length >
-maxChars
-){
-
-messageInput.value =
-messageInput.value.substring(
-0,
-maxChars
-);
-
-}
-
-}
-);
-
-/* =========================
-Page Title Restore
-========================= */
-
-window.addEventListener(
-"focus",
-()=>{
-
-document.title =
-"🌍 گروه چت همگانی Ultimate";
-
-}
-);
-
-/* =========================
-Startup Complete
-========================= */
-
-console.log(
-"🚀 Matin Chat Ultimate Ready"
-);
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>چت‌روم متین</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+  <!-- صفحه ثبت نام -->
+  <div id="register-page">
+    <div class="register-box">
+      <h1>💬 چت‌روم متین</h1>
+      <p>یک نام انتخاب کن</p>
+      <input type="text" id="username" placeholder="نام شما..." maxlength="20">
+      <button id="join-btn">ورود</button>
+      <div id="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- صفحه چت -->
+  <div id="chat-page" class="hidden">
+    <div class="header">
+      <span>💬 چت‌روم متین</span>
+      <div class="header-left">
+        <span id="counter">👤 0</span>
+        <button id="logout">🚪 خروج</button>
+      </div>
+    </div>
+
+    <div class="online-bar">
+      <span class="label">🟢 آنلاین‌ها:</span>
+      <div id="online-list"></div>
+    </div>
+
+    <div id="messages"></div>
+
+    <div id="typing-indicator"></div>
+
+    <div class="input-area">
+      <input type="text" id="input" placeholder="پیامت را بنویس..." autofocus>
+      <button id="send">📤</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- همه چیز در یک تگ ----------
+    const socket = io({ transports: ['websocket', 'polling'] });
+
+    // عناصر
+    const registerPage = document.getElementById('register-page');
+    const chatPage = document.getElementById('chat-page');
+    const usernameInput = document.getElementById('username');
+    const joinBtn = document.getElementById('join-btn');
+    const errorMsg = document.getElementById('error-msg');
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const counter = document.getElementById('counter');
+    const onlineList = document.getElementById('online-list');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const logoutBtn = document.getElementById('logout');
+
+    let myId = null;
+    let isTyping = false;
+    let typingTimer = null;
+
+    // ---------- ثبت نام ----------
+    joinBtn.addEventListener('click', () => {
+      const name = usernameInput.value.trim();
+      if (!name) { errorMsg.textContent = 'نام را وارد کن'; return; }
+      if (name.length < 2) { errorMsg.textContent = 'حداقل ۲ حرف'; return; }
+      errorMsg.textContent = '';
+      socket.emit('register', name);
+    });
+
+    usernameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') joinBtn.click();
+    });
+
+    // ---------- رویدادهای سوکت ----------
+    socket.on('registered', (data) => {
+      registerPage.classList.add('hidden');
+      chatPage.classList.remove('hidden');
+      input.focus();
+    });
+
+    socket.on('history', (msgs) => {
+      messagesDiv.innerHTML = '';
+      msgs.forEach(msg => addMessage(msg));
+      scrollDown();
+    });
+
+    socket.on('message', (msg) => {
+      addMessage(msg);
+      scrollDown();
+    });
+
+    socket.on('user_joined', (data) => {
+      updateOnlineList(data.onlineList);
+      counter.textContent = `👤 ${data.onlineList.length}`;
+      addSystemMessage(`${data.username} وارد شد`);
+    });
+
+    socket.on('user_left', (data) => {
+      addSystemMessage(`${data.username} خارج شد`);
+    });
+
+    socket.on('online_list', (list) => {
+      updateOnlineList(list);
+    });
+
+    socket.on('user_count', (count) => {
+      counter.textContent = `👤 ${count}`;
+    });
+
+    socket.on('typing_status', (data) => {
+      if (data.userId === socket.id) return;
+      if (data.isTyping) {
+        typingIndicator.textContent = `✍️ ${data.username} در حال تایپ...`;
+      } else {
+        typingIndicator.textContent = '';
+      }
+    });
+
+    // ---------- توابع UI ----------
+    function addMessage(msg) {
+      const isMine = msg.userId === socket.id;
+      const div = document.createElement('div');
+      div.className = `msg ${isMine ? 'mine' : 'other'}`;
+      div.innerHTML = `
+        <div class="bubble">
+          <span class="name" style="color:${msg.color || '#ccc'}">${msg.username}</span>
+          <span class="text">${msg.text}</span>
+          <span class="time">${msg.time}</span>
+        </div>
+      `;
+      messagesDiv.appendChild(div);
+    }
+
+    function addSystemMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'msg system';
+      div.textContent = `🔄 ${text}`;
+      messagesDiv.appendChild(div);
+      scrollDown();
+    }
+
+    function updateOnlineList(list) {
+      onlineList.innerHTML = '';
+      list.forEach(user => {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.innerHTML = `<span class="dot" style="background:${user.color}"></span> ${user.username}`;
+        onlineList.appendChild(span);
+      });
+    }
+
+    function scrollDown() {
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      socket.emit('message', text);
+      input.value = '';
+      input.focus();
+      clearTimeout(typingTimer);
+      socket.emit('typing', false);
+      typingIndicator.textContent = '';
+    }
+
+    // ---------- رویدادهای چت ----------
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+    });
+
+    input.addEventListener('input', () => {
+      const hasText = input.value.trim().length > 0;
+      if (hasText && !isTyping) {
+        isTyping = true;
+        socket.emit('typing', true);
+      } else if (!hasText && isTyping) {
+        isTyping = false;
+        socket.emit('typing', false);
+        typingIndicator.textContent = '';
+      }
+      clearTimeout(typingTimer);
+      if (hasText) {
+        typingTimer = setTimeout(() => {
+          isTyping = false;
+          socket.emit('typing', false);
+          typingIndicator.textContent = '';
+        }, 1200);
+      }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      socket.disconnect();
+      location.reload();
+    });
+
+    // ---------- شروع ----------
+    registerPage.classList.remove('hidden');
+    chatPage.classList.add('hidden');
+  </script>
+</body>
+</html>
