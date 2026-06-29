@@ -24,51 +24,22 @@ const STATE = {
 localStorage.setItem('pm_user_id', STATE.myId);
 
 // ============================================
-//  EMOJIS & STICKERS - تعداد بیشتر
+//  EMOJIS & STICKERS
 // ============================================
-const EMOJIS = [
-    // صورت‌ها
-    '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚',
-    '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴',
-    '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤',
-    '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱', '🥵', '🥶', '😳', '🤪', '😵', '😡', '😠', '🤬',
-    // دست‌ها
-    '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✌️', '🤟', '🤘', '👌',
-    // قلب‌ها
-    '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗', '💖',
-    // نمادها
-    '✨', '⭐', '🌟', '💫', '🔥', '💯', '🎉', '🎊', '🎁', '🎈', '🎀', '🎂',
-    // غذاها
-    '🍕', '🍔', '🍟', '🌭', '🍿', '🧁', '🍩', '🍪', '🍫', '🍬', '🍭', '🍮', '🍯', '🍰', '🎂', '🧁',
-    '🍣', '🍱', '🍛', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍥', '🍦', '🍧', '🍨', '🍩', '🍪', '🍫',
-    // حیوانات
-    '🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦',
-    '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜',
-    // پرچم‌ها
-    '🇮🇷', '🇺🇸', '🇬🇧', '🇩🇪', '🇫🇷', '🇮🇹', '🇪🇸', '🇵🇹', '🇨🇦', '🇦🇺', '🇯🇵', '🇰🇷', '🇨🇳', '🇷🇺', '🇧🇷',
-    // ورزش
-    '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🏒', '🏑', '🏏', '⛳', '🏹', '🎣',
-    // موسیقی
-    '🎵', '🎶', '🎼', '🎤', '🎧', '🎷', '🎸', '🎹', '🎺', '🎻', '🥁',
-    // ماشین‌ها
-    '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜',
-    '✈️', '🚀', '🛸', '🚁', '⛵', '🛥️', '🚤', '🛳️',
-    // طبیعت
-    '🌍', '🌎', '🌏', '🌋', '🗻', '🏔️', '⛰️', '🌄', '🌅', '🌆', '🌇', '🌉', '🌃', '🌌',
-    '🌈', '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️', '🌩️', '❄️', '☃️', '⛄'
+const EMOJIS = ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚',
+    '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜',
+    '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩',
+    '🤯', '😬', '😰', '😱', '🥵', '🥶', '😳', '🤪', '😵', '😡', '😠', '🤬', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐',
+    '🤲', '🤝', '🙏', '✌️', '🤟', '🤘', '👌', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗',
+    '💖', '✨', '⭐', '🌟', '💫', '🔥', '💯', '🎉', '🎊', '🎁', '🎈', '🎀', '🎂', '🍕', '🍔', '🍟', '🌭', '🍿', '🧁', '🍩', '🍪'
 ];
 
-const STICKERS = [
-    '😊', '😂', '🤣', '❤️', '🔥', '💯', '🎉', '✨', '⭐', '🌟',
+const STICKERS = ['😊', '😂', '🤣', '❤️', '🔥', '💯', '🎉', '✨', '⭐', '🌟',
     '👋', '🙏', '🤝', '✌️', '🤟', '👌', '👍', '👎', '👊', '✊',
     '🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
-    '🍕', '🍔', '🌭', '🍿', '🎂', '🍩', '🍪', '☕', '🍵', '🍺',
-    '🚀', '🌈', '⭐', '💫', '🎈', '🎁', '🎀', '🎊', '🎉', '🏆',
-    '😍', '🥰', '😘', '💕', '💖', '💗', '💓', '❤️', '🧡', '💛',
-    '💚', '💙', '💜', '🤍', '🖤', '💔', '🔥', '✨', '🌟', '💫'
+    '🍕', '🍔', '🌭', '🍿', '🎂', '🍩', '🍪', '☕', '🍵', '🍺'
 ];
 
-// واکنش‌های دلخواه
 const REACTIONS = ['❤️', '🔥', '👍', '😊', '😂', '🤣', '😍', '🥰', '💯', '🎉', '✨', '⭐', '😱', '🤯', '💔', '🙏'];
 
 // ============================================
@@ -154,10 +125,29 @@ function highlightText(text, query) {
 }
 
 // ============================================
+//  SERVER URL (PWA)
+// ============================================
+function getServerUrl() {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isPWA) {
+        return 'http://YOUR_SERVER_IP:3000'; // ← آدرس سرور واقعی رو بذار
+    }
+    return window.location.origin;
+}
+
+// ============================================
 //  SOCKET.IO
 // ============================================
 function connectSocket() {
-    STATE.socket = io();
+    const serverUrl = getServerUrl();
+    STATE.socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        timeout: 60000
+    });
+    
     STATE.socket.on('connect', () => {
         console.log('✅ متصل به سرور');
         if (STATE.isLoggedIn) {
@@ -171,6 +161,7 @@ function connectSocket() {
             });
         }
     });
+    
     STATE.socket.on('load_messages', (msgs) => { STATE.messages = msgs || [];
         renderMessages(); });
     STATE.socket.on('new_message', (msg) => { STATE.messages.push(msg);
@@ -186,6 +177,8 @@ function connectSocket() {
     STATE.socket.on('spam_warning', (msg) => { showToast(msg, '⚠️', 3000); });
     STATE.socket.on('messages_cleared', () => { showToast('🧹 تاریخچه شما پاک شد', '🧹');
         renderMessages(); });
+    STATE.socket.on('delete_confirmed', (msgId) => { showToast('✅ پیام برای همه حذف شد', '✅'); });
+    STATE.socket.on('clear_confirmed', () => { showToast('🧹 تاریخچه پاک شد', '🧹'); });
 }
 
 // ============================================
@@ -473,7 +466,7 @@ function scrollToBottom() {
 }
 
 // ============================================
-//  SEND MESSAGE - دکمه ارسال سمت راست
+//  SEND MESSAGE
 // ============================================
 window.sendMessage = function() {
     const text = messageEl.value.trim();
@@ -528,7 +521,7 @@ fileInput.addEventListener('change', function() {
 });
 
 // ============================================
-//  EMOJI PICKER (بیشتر)
+//  EMOJI PICKER
 // ============================================
 window.openEmojiPicker = function() {
     const grid = $('emoji-grid');
@@ -555,7 +548,7 @@ window.insertEmoji = function(emoji) {
 };
 
 // ============================================
-//  STICKER PICKER (بیشتر)
+//  STICKER PICKER
 // ============================================
 window.openStickerPicker = function() {
     const grid = $('sticker-grid');
@@ -578,7 +571,7 @@ window.sendSticker = function(sticker) {
 };
 
 // ============================================
-//  REACTION PICKER (واکنش دلخواه)
+//  REACTION PICKER
 // ============================================
 window.openReactionPicker = function() {
     const grid = $('reaction-grid');
@@ -601,14 +594,13 @@ window.sendReaction = function(emoji) {
         addReaction(reactionTargetMsg, emoji);
         reactionTargetMsg = null;
     } else {
-        // اگر روی پیام خاصی نبود، روی آخرین پیام خود کاربر واکنش بده
         const lastMsg = STATE.messages.filter(m => m.sender_id === STATE.myId).pop();
         if (lastMsg) addReaction(lastMsg.id, emoji);
     }
 };
 
 // ============================================
-//  CONTEXT MENU - کامل
+//  CONTEXT MENU
 // ============================================
 window.handleCtxMenu = function(e, msgId) {
     e.preventDefault();
@@ -711,15 +703,22 @@ window.ctxDeleteForMe = function() {
     }
 };
 
+// رفع باگ حذف برای همه
 window.ctxDeleteForAll = function() {
     if (STATE.ctxTarget) {
         const msg = STATE.ctxTarget;
-        if (msg.sender_id !== STATE.myId) { showToast('فقط فرستنده می‌تواند حذف کند', '❌');
-            ctxMenu.classList.add('hidden'); return; }
-        if (!confirm('حذف برای همه؟ این کار غیرقابل برگشت است!')) { ctxMenu.classList.add('hidden'); return; }
+        if (msg.sender_id !== STATE.myId) { 
+            showToast('فقط فرستنده می‌تواند حذف کند', '❌');
+            ctxMenu.classList.add('hidden'); 
+            return; 
+        }
+        if (!confirm('حذف برای همه؟ این کار غیرقابل برگشت است!')) { 
+            ctxMenu.classList.add('hidden'); 
+            return; 
+        }
         if (STATE.socket && STATE.socket.connected) {
             STATE.socket.emit('delete_for_all', msg.id);
-            showToast('✅ پیام برای همه حذف شد', '✅');
+            showToast('✅ در حال حذف...', '⏳');
         }
         ctxMenu.classList.add('hidden');
     }
@@ -766,7 +765,7 @@ window.addReaction = function(msgId, emoji) {
 };
 
 // ============================================
-//  USER PROFILE - کامل
+//  USER PROFILE
 // ============================================
 window.showUserProfile = function(userId) {
     const userMsg = STATE.messages.find(m => m.sender_id === userId);
@@ -819,10 +818,13 @@ window.startPrivateChat = function() {
 };
 
 // ============================================
-//  MY PROFILE - کامل با ویرایش
+//  MY PROFILE - رفع باگ باز نشدن
 // ============================================
 window.openMyProfile = function() {
-    if (!STATE.isLoggedIn) { showToast('لطفاً وارد شوید', '⚠️'); return; }
+    if (!STATE.isLoggedIn) { 
+        showToast('لطفاً وارد شوید', '⚠️'); 
+        return; 
+    }
     const av = $('my-profile-avatar');
     if (STATE.myAvatar) {
         av.style.backgroundImage = `url('${STATE.myAvatar}')`;
@@ -841,7 +843,6 @@ window.openMyProfile = function() {
 
 window.closeMyProfile = function() { $('my-profile-modal').classList.add('hidden'); };
 
-// آپلود عکس در پروفایل
 document.getElementById('avatar-input-edit')?.addEventListener('change', async function() {
     if (this.files.length > 0) {
         const formData = new FormData();
@@ -892,6 +893,7 @@ document.getElementById('avatar-input-edit2')?.addEventListener('change', async 
     this.value = '';
 });
 
+// رفع باگ ویرایش پروفایل
 window.editMyProfile = function() {
     closeMyProfile();
     $('edit-profile-name').value = STATE.myName || '';
@@ -939,7 +941,7 @@ window.saveEditProfile = function() {
 };
 
 // ============================================
-//  CHAT LIST - مخاطبین کامل
+//  CHAT LIST
 // ============================================
 window.openChatList = function() {
     $('chat-list-modal').classList.remove('hidden');
@@ -1071,7 +1073,7 @@ window.searchMessages = function(query) {
 };
 
 // ============================================
-//  MENU - کامل
+//  MENU
 // ============================================
 window.openMenu = function() { $('menu-modal').classList.remove('hidden'); };
 window.closeMenu = function() { $('menu-modal').classList.add('hidden'); };
@@ -1080,7 +1082,7 @@ window.clearMyMessages = function() {
     if (!confirm('همه پیام‌های شما حذف می‌شوند. ادامه؟')) return;
     if (STATE.socket && STATE.socket.connected) {
         STATE.socket.emit('clear_my_messages');
-        showToast('🧹 تاریخچه شما پاک شد', '🧹');
+        showToast('🧹 در حال پاک کردن...', '⏳');
     }
 };
 
@@ -1108,6 +1110,36 @@ window.exportChat = function() {
     URL.revokeObjectURL(url);
     showToast('📤 خروجی چت دانلود شد', '📤');
 };
+
+// ============================================
+//  نصب برنامه (PWA)
+// ============================================
+window.installApp = function() {
+    if (window.deferredPrompt) {
+        window.deferredPrompt.prompt();
+        window.deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                showToast('✅ برنامه نصب شد!', '🎉');
+            } else {
+                showToast('❌ نصب لغو شد', '❌');
+            }
+            window.deferredPrompt = null;
+        });
+    } else {
+        showToast('📱 از منوی مرورگر گزینه "نصب برنامه" را انتخاب کنید', '📱');
+    }
+};
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredPrompt = e;
+    console.log('📲 برنامه قابل نصب است');
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('✅ برنامه نصب شد!');
+    showToast('✅ برنامه با موفقیت نصب شد!', '🎉', 4000);
+});
 
 // ============================================
 //  TEXTAREA EVENTS
@@ -1160,7 +1192,7 @@ function initApp() {
         loginModal.classList.remove('hidden');
     }
     headerStatus.innerHTML = `<span class="dot"></span><span>آنلاین</span>`;
-    console.log('🚀 Persia Messenger v4.0 - نسخه کامل');
+    console.log('🚀 Persia Messenger v5.0 - نسخه نهایی');
     console.log('👤 کاربر:', STATE.myName || '未登录');
     console.log('🆔 شناسه:', STATE.myId);
     console.log('🎨 تم:', STATE.theme);
@@ -1171,4 +1203,5 @@ document.documentElement.style.setProperty('--font-family', "'Inter', -apple-sys
 initApp();
 
 console.log('✨ گپ گروهی - نسخه کامل با همه امکانات');
-console.log('📱 برای ورود، روی "دریافت کد" کلیک کنید و کد را از کنسول بگیرید.');
+console.log('📱 برای تبدیل به APK: npm run build:pwa');
+console.log('📱 برای تبدیل با Capacitor: npm run build:android');
