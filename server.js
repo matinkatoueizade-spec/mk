@@ -1,226 +1,157 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const cors = require("cors");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+const io = new Server(server,{
+cors:{
+origin:"*"
+}
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
+app.use(express.json());
+
+app.use(
+express.static(
+path.join(__dirname,"public")
+)
+);
 
 const users = {};
 const messages = [];
 
-const typingUsers = new Set();
-const spamMap = new Map();
-
 const MAX_MESSAGES = 100;
-const MESSAGE_LIMIT = 500;
-const SPAM_TIME = 1000;
 
-app.get("/health", (req, res) => {
-  res.json({
-    status: "online",
-    users: Object.keys(users).length
-  });
+app.get("/health",(req,res)=>{
+res.json({
+status:"online",
+users:Object.keys(users).length,
+uptime:process.uptime()
+});
 });
 
-io.on("connection", (socket) => {
+io.on("connection",(socket)=>{
 
-  let lastMessageTime = 0;
+console.log(
+"Connected:",
+socket.id
+);
 
-  socket.on("join", (username) => {
+socket.on("join",(username)=>{
 
-    users[socket.id] = {
-      id: socket.id,
-      uid: uuidv4(),
-      username: username || "مهمان",
-      room: "global"
-    };
+users[socket.id] = {
+  id:socket.id,
+  username:
+    username || "مهمان"
+};
 
-    socket.join("global");
+socket.emit(
+  "messageHistory",
+  messages
+);
 
-    socket.emit("messageHistory", messages);
+io.emit(
+  "usersList",
+  Object.values(users)
+);
 
-    io.emit("usersList", Object.values(users));
+io.emit(
+  "systemMessage",
+  {
+    id:uuidv4(),
+    text:
+    `${username} وارد شد`
+  }
+);
 
-    io.emit("systemMessage", {
-      id: uuidv4(),
-      text: `${users[socket.id].username} وارد شد 🎉`
-    });
+});
 
-  });
+socket.on(
+"chatMessage",
+(text)=>{
 
-  socket.on("typing", () => {
+  if(
+    !users[socket.id]
+  ) return;
 
-    if (!users[socket.id]) return;
+  const msg = {
+    id:uuidv4(),
+    user:
+    users[socket.id]
+    .username,
+    text,
+    time:
+    Date.now()
+  };
 
-    typingUsers.add(users[socket.id].username);
+  messages.push(msg);
 
-    socket.broadcast
-      .to(users[socket.id].room)
-      .emit("typing", {
-        user: users[socket.id].username
-      });
+  if(
+    messages.length >
+    MAX_MESSAGES
+  ){
+    messages.shift();
+  }
 
-  });
+  io.emit(
+    "chatMessage",
+    msg
+  );
 
-  socket.on("stopTyping", () => {
+}
 
-    if (!users[socket.id]) return;
+);
 
-    typingUsers.delete(users[socket.id].username);
+socket.on(
+"disconnect",
+()=>{
 
-    socket.broadcast
-      .to(users[socket.id].room)
-      .emit("stopTyping", {
-        user: users[socket.id].username
-      });
+  if(
+    users[socket.id]
+  ){
 
-  });
-
-  socket.on("joinRoom", (room) => {
-
-    if (!users[socket.id]) return;
-
-    socket.leave(users[socket.id].room);
-
-    users[socket.id].room = room;
-
-    socket.join(room);
-
-    socket.emit("roomJoined", room);
-
-  });
-
-  socket.on("chatMessage", (text) => {
-
-    if (!users[socket.id]) return;
-    if (!text) return;
-
-    text = String(text).trim();
-
-    if (text.length === 0) return;
-    if (text.length > MESSAGE_LIMIT) return;
-
-    const now = Date.now();
-
-    if (now - lastMessageTime < SPAM_TIME) {
-      socket.emit(
-        "errorMessage",
-        "🚫 خیلی سریع پیام میدی!"
-      );
-      return;
-    }
-
-    lastMessageTime = now;
-
-    if (!spamMap.has(socket.id)) {
-      spamMap.set(socket.id, []);
-    }
-
-    const recent = spamMap.get(socket.id);
-
-    recent.push(now);
-
-    while (
-      recent.length &&
-      now - recent[0] > 5000
-    ) {
-      recent.shift();
-    }
-
-    if (recent.length > 8) {
-      socket.emit(
-        "errorMessage",
-        "🚫 اسپم شناسایی شد!"
-      );
-      return;
-    }
-
-    const msg = {
-      id: uuidv4(),
-      user: users[socket.id].username,
-      text,
-      room: users[socket.id].room,
-      time: now
-    };
-
-    messages.push(msg);
-
-    if (messages.length > MAX_MESSAGES) {
-      messages.shift();
-    }
-
-    io.to(users[socket.id].room)
-      .emit("chatMessage", msg);
-
-  });
-
-  socket.on("privateMessage", (data) => {
-
-    if (!users[socket.id]) return;
-
-    const target = data.targetId;
-
-    if (!target) return;
-
-    const msg = {
-      id: uuidv4(),
-      from: users[socket.id].username,
-      text: data.text,
-      time: Date.now()
-    };
-
-    io.to(target).emit(
-      "privateMessage",
-      msg
+    io.emit(
+      "systemMessage",
+      {
+        id:uuidv4(),
+        text:
+        `${users[socket.id].username} خارج شد`
+      }
     );
 
-    socket.emit(
-      "privateMessage",
-      msg
-    );
-
-  });
-
-  socket.on("disconnect", () => {
-
-    if (!users[socket.id]) return;
-
-    typingUsers.delete(
-      users[socket.id].username
-    );
-
-    spamMap.delete(socket.id);
-
-    io.emit("systemMessage", {
-      id: uuidv4(),
-      text: `${users[socket.id].username} خارج شد 👋`
-    });
-
-    delete users[socket.id];
+    delete users[
+      socket.id
+    ];
 
     io.emit(
       "usersList",
       Object.values(users)
     );
 
-  });
+  }
+
+}
+
+);
 
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-  console.log(
-    "🚀 Matin Chat Ultimate Running On Port " + PORT
-  );
-});
+server.listen(
+PORT,
+()=>{
+
+console.log(
+  `🚀 Server Running On ${PORT}`
+);
+
+}
+);
