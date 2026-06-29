@@ -1,7 +1,7 @@
 {
-  "name": "matin-chat-pro",
+  "name": "matin-chat",
   "version": "2.0.0",
-  "description": "چت‌روم آنلاین حرفه‌ای با نام کاربری، تاریخچه، و معماری تمیز",
+  "description": "چت‌روم آنلاین ساده و حرفه‌ای",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,17 +9,9 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5",
-    "helmet": "^7.0.0",
-    "express-rate-limit": "^7.1.5",
-    "compression": "^1.7.4"
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }
