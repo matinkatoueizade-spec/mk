@@ -8,7 +8,6 @@ const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
 const cors = require('cors');
 const fs = require('fs');
-const bcrypt = require('bcryptjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,9 +26,8 @@ await db.read();
 db.data ||= { 
   users: [], 
   messages: [], 
-  verificationCodes: [],
   groups: [],
-  channels: []
+  verificationCodes: []
 };
 await db.write();
 
@@ -44,12 +42,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
   storage, 
-  limits: { fileSize: 100 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/ogg', 'application/pdf'];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('فرمت فایل پشتیبانی نمی‌شود'));
-  }
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
 app.use(express.json());
@@ -61,6 +54,16 @@ app.use('/uploads', express.static('uploads'));
 const findUser = (phone) => db.data.users.find(u => u.phone === phone);
 const findUserById = (id) => db.data.users.find(u => u.id === id);
 const findUserByUsername = (username) => db.data.users.find(u => u.username === username);
+const getMessages = (userId, contactId) => {
+  return db.data.messages.filter(m => 
+    (m.from === userId && m.to === contactId) ||
+    (m.from === contactId && m.to === userId)
+  ).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+const getGroupMessages = (groupId) => {
+  return db.data.messages.filter(m => m.groupId === groupId)
+    .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
 
 // ========== API ==========
 app.post('/api/register', async (req, res) => {
@@ -110,12 +113,13 @@ app.post('/api/verify', async (req, res) => {
       createdAt: new Date().toISOString(),
       settings: {
         theme: 'dark',
+        fontSize: 'medium',
+        fontFamily: 'default',
         notifications: true,
-        sound: true,
-        language: 'fa'
+        sound: true
       },
       contacts: [],
-      blocked: []
+      groups: []
     };
     db.data.users.push(user);
     await db.write();
@@ -135,6 +139,21 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   });
 });
 
+app.post('/api/create-group', async (req, res) => {
+  const { name, members, creatorId } = req.body;
+  const group = {
+    id: 'group_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    name: name || 'گروه جدید',
+    creator: creatorId,
+    members: [creatorId, ...members],
+    createdAt: new Date().toISOString(),
+    avatar: ''
+  };
+  db.data.groups.push(group);
+  await db.write();
+  res.json({ success: true, group });
+});
+
 app.get('/api/user/:id', (req, res) => {
   const user = findUserById(req.params.id);
   if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
@@ -150,18 +169,6 @@ app.get('/api/search/:query', (req, res) => {
      (u.fullName && u.fullName.toLowerCase().includes(query)))
   );
   res.json(results);
-});
-
-app.post('/api/add-contact', async (req, res) => {
-  const { userId, contactId } = req.body;
-  const user = findUserById(userId);
-  const contact = findUserById(contactId);
-  if (!user || !contact) return res.status(404).json({ error: 'کاربر یافت نشد' });
-  if (!user.contacts.includes(contactId)) {
-    user.contacts.push(contactId);
-    await db.write();
-  }
-  res.json({ success: true });
 });
 
 app.get('*', (req, res) => {
@@ -182,7 +189,6 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   console.log(`🟢 ${socket.user.username} آنلاین شد`);
   
-  // بروزرسانی وضعیت آنلاین
   const user = findUserById(socket.userId);
   if (user) {
     user.isOnline = true;
@@ -192,25 +198,20 @@ io.on('connection', (socket) => {
   
   socket.join(socket.userId);
   
-  // ارسال لیست مخاطبین
+  // لیست مخاطبین
   const contacts = db.data.users.filter(u => 
     user.contacts.includes(u.id) && u.id !== socket.userId
   );
   socket.emit('contacts', contacts);
   
-  // ارسال اطلاعات کاربر
+  // لیست گروه‌ها
+  const groups = db.data.groups.filter(g => g.members.includes(socket.userId));
+  socket.emit('groups', groups);
+  
+  // اطلاعات کاربر
   socket.emit('user_info', user);
 
-  // ارسال تاریخچه پیام‌ها برای هر مخاطب
-  contacts.forEach(contact => {
-    const msgs = db.data.messages.filter(m => 
-      (m.from === socket.userId && m.to === contact.id) ||
-      (m.from === contact.id && m.to === socket.userId)
-    ).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-    socket.emit('messages_history', { contactId: contact.id, messages: msgs });
-  });
-
-  // پیام خصوصی
+  // ========== پیام خصوصی ==========
   socket.on('private_message', (data) => {
     const { to, text, file, replyTo } = data;
     if (!to) return;
@@ -235,7 +236,6 @@ io.on('connection', (socket) => {
       timestamp: new Date().toISOString(),
       reactions: [],
       deleted: false,
-      deletedFor: [],
       edited: false,
       seen: false,
       seenAt: null
@@ -248,7 +248,36 @@ io.on('connection', (socket) => {
     socket.emit('new_message', msg);
   });
 
-  // ریاکشن
+  // ========== پیام گروهی ==========
+  socket.on('group_message', (data) => {
+    const { groupId, text, file, replyTo } = data;
+    if (!groupId) return;
+    
+    const group = db.data.groups.find(g => g.id === groupId);
+    if (!group || !group.members.includes(socket.userId)) return;
+    
+    const msg = {
+      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      from: socket.userId,
+      groupId: groupId,
+      text: text || '',
+      file: file || null,
+      replyTo: replyTo || null,
+      timestamp: new Date().toISOString(),
+      reactions: [],
+      deleted: false,
+      edited: false
+    };
+    
+    db.data.messages.push(msg);
+    db.write();
+    
+    group.members.forEach(memberId => {
+      io.to(memberId).emit('new_group_message', msg);
+    });
+  });
+
+  // ========== ریاکشن ==========
   socket.on('reaction', ({ messageId, emoji }) => {
     const msg = db.data.messages.find(m => m.id === messageId);
     if (!msg || msg.deleted) return;
@@ -265,11 +294,20 @@ io.on('connection', (socket) => {
     }
     db.write();
     
-    io.to(msg.from).emit('message_reaction', { messageId, reactions: msg.reactions });
-    io.to(msg.to).emit('message_reaction', { messageId, reactions: msg.reactions });
+    if (msg.groupId) {
+      const group = db.data.groups.find(g => g.id === msg.groupId);
+      if (group) {
+        group.members.forEach(memberId => {
+          io.to(memberId).emit('message_reaction', { messageId, reactions: msg.reactions });
+        });
+      }
+    } else {
+      io.to(msg.from).emit('message_reaction', { messageId, reactions: msg.reactions });
+      io.to(msg.to).emit('message_reaction', { messageId, reactions: msg.reactions });
+    }
   });
 
-  // حذف پیام
+  // ========== حذف پیام ==========
   socket.on('delete_message', ({ messageId, forEveryone }) => {
     const msg = db.data.messages.find(m => m.id === messageId);
     if (!msg || msg.from !== socket.userId) return;
@@ -277,14 +315,23 @@ io.on('connection', (socket) => {
     if (forEveryone) {
       msg.deleted = true;
       db.write();
-      io.to(msg.from).emit('message_deleted', { messageId, forEveryone: true });
-      io.to(msg.to).emit('message_deleted', { messageId, forEveryone: true });
+      if (msg.groupId) {
+        const group = db.data.groups.find(g => g.id === msg.groupId);
+        if (group) {
+          group.members.forEach(memberId => {
+            io.to(memberId).emit('message_deleted', { messageId, forEveryone: true });
+          });
+        }
+      } else {
+        io.to(msg.from).emit('message_deleted', { messageId, forEveryone: true });
+        io.to(msg.to).emit('message_deleted', { messageId, forEveryone: true });
+      }
     } else {
       socket.emit('message_deleted', { messageId, forEveryone: false });
     }
   });
 
-  // ویرایش پیام
+  // ========== ویرایش پیام ==========
   socket.on('edit_message', ({ messageId, text }) => {
     const msg = db.data.messages.find(m => m.id === messageId);
     if (!msg || msg.from !== socket.userId || msg.deleted) return;
@@ -292,16 +339,37 @@ io.on('connection', (socket) => {
     msg.edited = true;
     msg.editedAt = new Date().toISOString();
     db.write();
-    io.to(msg.from).emit('message_edited', { messageId, text });
-    io.to(msg.to).emit('message_edited', { messageId, text });
+    
+    if (msg.groupId) {
+      const group = db.data.groups.find(g => g.id === msg.groupId);
+      if (group) {
+        group.members.forEach(memberId => {
+          io.to(memberId).emit('message_edited', { messageId, text });
+        });
+      }
+    } else {
+      io.to(msg.from).emit('message_edited', { messageId, text });
+      io.to(msg.to).emit('message_edited', { messageId, text });
+    }
   });
 
-  // وضعیت تایپ
+  // ========== وضعیت تایپ ==========
   socket.on('typing', ({ to, isTyping }) => {
     socket.to(to).emit('user_typing', { from: socket.userId, isTyping });
   });
 
-  // دیده شدن پیام
+  socket.on('group_typing', ({ groupId, isTyping }) => {
+    const group = db.data.groups.find(g => g.id === groupId);
+    if (group) {
+      group.members.forEach(memberId => {
+        if (memberId !== socket.userId) {
+          io.to(memberId).emit('group_typing', { groupId, from: socket.userId, isTyping });
+        }
+      });
+    }
+  });
+
+  // ========== دیده شدن پیام ==========
   socket.on('message_seen', ({ contactId }) => {
     const msgs = db.data.messages.filter(m => 
       m.from === contactId && m.to === socket.userId && !m.seen
@@ -314,7 +382,7 @@ io.on('connection', (socket) => {
     io.to(contactId).emit('messages_seen', { by: socket.userId, count: msgs.length });
   });
 
-  // آپدیت پروفایل
+  // ========== آپدیت پروفایل ==========
   socket.on('update_profile', (data) => {
     const user = findUserById(socket.userId);
     if (user) {
@@ -325,7 +393,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  // اضافه کردن مخاطب
+  // ========== آپدیت تنظیمات ==========
+  socket.on('update_settings', (data) => {
+    const user = findUserById(socket.userId);
+    if (user) {
+      user.settings = { ...user.settings, ...data };
+      db.write();
+      socket.emit('settings_updated', user.settings);
+    }
+  });
+
+  // ========== اضافه کردن مخاطب ==========
   socket.on('add_contact', ({ contactId }) => {
     const user = findUserById(socket.userId);
     if (user && !user.contacts.includes(contactId)) {
@@ -336,7 +414,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // قطع اتصال
+  // ========== قطع اتصال ==========
   socket.on('disconnect', () => {
     const user = findUserById(socket.userId);
     if (user) {
