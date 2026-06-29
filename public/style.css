@@ -615,7 +615,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════
-   INPUT BAR
+   INPUT BAR - دکمه ارسال سمت راست
 ═══════════════════════════════════════════════════ */
 #input-bar {
     background: var(--bg-secondary);
@@ -660,12 +660,13 @@ body {
     border-radius: var(--radius-xl);
     display: flex;
     align-items: center;
-    padding: 0 6px 0 16px;
+    padding: 0 16px 0 6px;
     min-height: 48px;
     max-height: 140px;
     border: 2px solid transparent;
     transition: var(--transition);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, .1);
+    flex-direction: row-reverse;
 }
 #message-wrap:focus-within {
     border-color: var(--accent);
@@ -684,6 +685,7 @@ body {
     padding: 10px 0;
     line-height: 1.5;
     font-family: var(--font);
+    text-align: right;
 }
 #message::placeholder {
     color: var(--text-muted);
@@ -719,6 +721,7 @@ body {
     flex-shrink: 0;
     transition: var(--transition);
     box-shadow: var(--shadow-light);
+    margin-left: 0;
 }
 #send-btn:hover {
     transform: scale(1.08) rotate(-5deg);
@@ -732,7 +735,6 @@ body {
     height: 20px;
     fill: #fff;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .2));
-    transform: translateX(2px);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1128,7 +1130,7 @@ body {
     background: var(--bg-hover);
 }
 .menu-item {
-    padding: 14px;
+    padding: 12px;
     border-radius: var(--radius);
     background: var(--bg-input);
     border: 1px solid var(--border);
@@ -1183,7 +1185,8 @@ body {
 ═══════════════════════════════════════════════════ */
 #file-input,
 #avatar-input,
-#avatar-input-edit {
+#avatar-input-edit,
+#avatar-input-edit2 {
     display: none;
 }
 
@@ -1219,7 +1222,7 @@ body {
     }
     #message-wrap {
         min-height: 42px;
-        padding: 0 4px 0 12px;
+        padding: 0 10px 0 4px;
     }
     #send-btn {
         width: 36px;
@@ -1272,6 +1275,15 @@ body {
         height: 68px;
         font-size: 28px;
     }
+    .menu-item {
+        padding: 10px;
+    }
+    .menu-item div:first-child {
+        font-size: 20px !important;
+    }
+    .menu-item div:last-child {
+        font-size: 10px !important;
+    }
 }
 
 @media (min-width: 600px) {
@@ -1282,4 +1294,4 @@ body {
         border-right: 1px solid var(--border);
         box-shadow: 0 0 60px rgba(0, 0, 0, .3);
     }
-   }
+}
