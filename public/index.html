@@ -5,53 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>متین‌گرام</title>
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
-  <!-- صفحه ثبت نام -->
+
+  <!-- ======== صفحه ثبت نام ======== -->
   <div id="auth-page">
     <div class="auth-box">
-      <h1><i class="fas fa-rocket"></i> متین‌گرام</h1>
-      <p>شماره موبایل خود را وارد کنید</p>
-      <input type="tel" id="phone-input" placeholder="مثلاً 09123456789" maxlength="11">
-      <button id="send-code-btn">ارسال کد</button>
-      <div id="code-section" style="display:none">
-        <p>کد ۶ رقمی را وارد کنید</p>
-        <input type="text" id="code-input" placeholder="کد تایید" maxlength="6">
-        <button id="verify-btn">تایید</button>
+      <div class="auth-logo"><i class="fas fa-paper-plane"></i> متین‌گرام</div>
+      <p class="auth-sub">برای شروع شماره موبایل را وارد کنید</p>
+      
+      <div id="phone-step">
+        <div class="input-group">
+          <i class="fas fa-phone"></i>
+          <input type="tel" id="phone-input" placeholder="0912 345 6789" maxlength="11">
+        </div>
+        <button id="send-code-btn" class="btn-primary">ارسال کد تایید</button>
+        <div id="auth-error" class="error"></div>
       </div>
-      <div id="auth-error" class="error"></div>
+      
+      <div id="code-step" style="display:none">
+        <p class="code-hint">کد ۶ رقمی ارسال شده را وارد کنید</p>
+        <div class="input-group">
+          <i class="fas fa-shield-alt"></i>
+          <input type="text" id="code-input" placeholder="_ _ _ _ _ _" maxlength="6">
+        </div>
+        <button id="verify-btn" class="btn-primary">تایید و ورود</button>
+        <button id="resend-code-btn" class="btn-secondary">ارسال مجدد کد</button>
+      </div>
     </div>
   </div>
 
-  <!-- صفحه اصلی چت -->
+  <!-- ======== برنامه اصلی ======== -->
   <div id="app" style="display:none">
-    <!-- نوار کناری (لیست چت‌ها) -->
+    
+    <!-- ===== نوار کناری ===== -->
     <div id="sidebar">
       <div class="sidebar-header">
-        <h2>💬 متین‌گرام</h2>
-        <button id="profile-btn"><i class="fas fa-user-circle"></i></button>
+        <h2><i class="fas fa-paper-plane"></i> متین‌گرام</h2>
+        <div class="header-actions">
+          <button id="theme-toggle"><i class="fas fa-moon"></i></button>
+          <button id="profile-btn"><i class="fas fa-user-circle"></i></button>
+        </div>
       </div>
+      
       <div class="search-box">
+        <i class="fas fa-search"></i>
         <input type="text" id="search-input" placeholder="جستجوی مخاطب...">
       </div>
+      
       <div id="contact-list"></div>
+      
       <div class="sidebar-footer">
-        <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        <div class="user-status">
+          <span id="my-status">🟢 آنلاین</span>
+        </div>
+        <button id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
       </div>
     </div>
 
-    <!-- پنجره چت -->
+    <!-- ===== پنجره چت ===== -->
     <div id="chat-window">
       <div class="chat-header">
         <div id="chat-contact-info">
-          <span id="chat-contact-name">انتخاب مخاطب</span>
+          <div id="chat-avatar" class="chat-avatar"></div>
+          <div>
+            <div id="chat-contact-name">انتخاب مخاطب</div>
+            <div id="chat-contact-status">آخرین بازدید</div>
+          </div>
         </div>
-        <button id="chat-settings-btn"><i class="fas fa-ellipsis-v"></i></button>
+        <div class="chat-actions">
+          <button id="chat-info-btn"><i class="fas fa-info-circle"></i></button>
+          <button id="chat-settings-btn"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
       </div>
+      
       <div id="messages-container"></div>
+      
       <div id="typing-indicator" class="typing"></div>
+      
       <div class="chat-input-area">
         <button id="emoji-btn"><i class="fas fa-smile"></i></button>
         <button id="attach-btn"><i class="fas fa-paperclip"></i></button>
@@ -61,36 +94,69 @@
       </div>
     </div>
 
-    <!-- پنل پروفایل / تنظیمات -->
+    <!-- ===== پنل پروفایل ===== -->
     <div id="profile-panel" style="display:none">
       <div class="panel-header">
-        <h3>پروفایل</h3>
+        <h3><i class="fas fa-user-cog"></i> پروفایل</h3>
         <button id="close-panel"><i class="fas fa-times"></i></button>
       </div>
-      <div class="profile-avatar">
-        <img id="profile-avatar-img" src="" alt="avatar">
-        <button id="change-avatar-btn"><i class="fas fa-camera"></i></button>
+      
+      <div class="profile-avatar-section">
+        <div class="profile-avatar">
+          <img id="profile-avatar-img" src="" alt="avatar">
+          <div class="avatar-overlay" id="change-avatar-btn">
+            <i class="fas fa-camera"></i>
+          </div>
+        </div>
+        <input type="file" id="avatar-input" style="display:none" accept="image/*">
       </div>
-      <div class="profile-field">
-        <label>نام کاربری</label>
-        <input type="text" id="profile-username" placeholder="نام">
+      
+      <div class="profile-fields">
+        <div class="profile-field">
+          <label><i class="fas fa-user"></i> نام کامل</label>
+          <input type="text" id="profile-fullname" placeholder="نام و نام خانوادگی">
+        </div>
+        <div class="profile-field">
+          <label><i class="fas fa-at"></i> نام کاربری</label>
+          <input type="text" id="profile-username" placeholder="نام کاربری">
+        </div>
+        <div class="profile-field">
+          <label><i class="fas fa-info-circle"></i> بیوگرافی</label>
+          <textarea id="profile-bio" placeholder="درباره خودت بنویس..."></textarea>
+        </div>
+        <div class="profile-field row">
+          <div>
+            <label><i class="fas fa-calendar"></i> سن</label>
+            <input type="number" id="profile-age" placeholder="سن">
+          </div>
+          <div>
+            <label><i class="fas fa-venus-mars"></i> جنسیت</label>
+            <select id="profile-gender">
+              <option value="">انتخاب</option>
+              <option value="male">مرد</option>
+              <option value="female">زن</option>
+              <option value="other">سایر</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="profile-field">
-        <label>بیوگرافی</label>
-        <textarea id="profile-bio" placeholder="درباره خودت..."></textarea>
+      
+      <div class="profile-actions">
+        <button id="save-profile-btn" class="btn-primary"><i class="fas fa-save"></i> ذخیره</button>
       </div>
-      <div class="profile-field">
-        <label>تم</label>
-        <select id="theme-select">
-          <option value="dark">تاریک</option>
-          <option value="light">روشن</option>
-        </select>
+    </div>
+
+    <!-- ===== پنل اطلاعات مخاطب ===== -->
+    <div id="contact-info-panel" style="display:none">
+      <div class="panel-header">
+        <h3><i class="fas fa-info-circle"></i> اطلاعات مخاطب</h3>
+        <button id="close-contact-info"><i class="fas fa-times"></i></button>
       </div>
-      <button id="save-profile-btn">ذخیره تغییرات</button>
+      <div id="contact-info-content"></div>
     </div>
   </div>
 
-  <!-- اموجی‌پیکر (با CDN) -->
+  <!-- ======== اموجی‌پیکر ======== -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.19.0/dist/emojipicker.css">
   <script type="module">
     import { EmojiPicker } from 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.19.0/dist/emojipicker.js';
@@ -99,52 +165,73 @@
     window.emojiPicker.style.display = 'none';
   </script>
 
+  <!-- ======== کد کلاینت ======== -->
   <script>
-    // ------------- کلاینت کامل -------------
     (function() {
-      // عناصر DOM
+      'use strict';
+      
+      // ---------- عناصر DOM ----------
       const authPage = document.getElementById('auth-page');
       const app = document.getElementById('app');
       const phoneInput = document.getElementById('phone-input');
       const sendCodeBtn = document.getElementById('send-code-btn');
-      const codeSection = document.getElementById('code-section');
+      const codeStep = document.getElementById('code-step');
+      const phoneStep = document.getElementById('phone-step');
       const codeInput = document.getElementById('code-input');
       const verifyBtn = document.getElementById('verify-btn');
+      const resendCodeBtn = document.getElementById('resend-code-btn');
       const authError = document.getElementById('auth-error');
+      
       const contactList = document.getElementById('contact-list');
       const messagesContainer = document.getElementById('messages-container');
       const messageInput = document.getElementById('message-input');
       const sendBtn = document.getElementById('send-btn');
       const chatContactName = document.getElementById('chat-contact-name');
+      const chatContactStatus = document.getElementById('chat-contact-status');
+      const chatAvatar = document.getElementById('chat-avatar');
       const typingIndicator = document.getElementById('typing-indicator');
       const searchInput = document.getElementById('search-input');
+      
       const profileBtn = document.getElementById('profile-btn');
       const profilePanel = document.getElementById('profile-panel');
       const closePanel = document.getElementById('close-panel');
+      const profileFullname = document.getElementById('profile-fullname');
       const profileUsername = document.getElementById('profile-username');
       const profileBio = document.getElementById('profile-bio');
-      const themeSelect = document.getElementById('theme-select');
+      const profileAge = document.getElementById('profile-age');
+      const profileGender = document.getElementById('profile-gender');
+      const profileAvatarImg = document.getElementById('profile-avatar-img');
+      const avatarInput = document.getElementById('avatar-input');
+      const changeAvatarBtn = document.getElementById('change-avatar-btn');
       const saveProfileBtn = document.getElementById('save-profile-btn');
+      
       const logoutBtn = document.getElementById('logout-btn');
       const attachBtn = document.getElementById('attach-btn');
       const fileInput = document.getElementById('file-input');
       const emojiBtn = document.getElementById('emoji-btn');
-      const chatSettingsBtn = document.getElementById('chat-settings-btn');
+      const themeToggle = document.getElementById('theme-toggle');
+      const chatInfoBtn = document.getElementById('chat-info-btn');
+      const contactInfoPanel = document.getElementById('contact-info-panel');
+      const closeContactInfo = document.getElementById('close-contact-info');
+      const contactInfoContent = document.getElementById('contact-info-content');
+      const myStatus = document.getElementById('my-status');
 
       let socket = null;
       let currentUser = null;
       let currentContact = null;
       let contacts = [];
       let messages = [];
-      let activeChatId = null;
+      let isDark = true;
+      let phoneNumber = '';
 
       // ---------- احراز هویت ----------
       sendCodeBtn.addEventListener('click', async () => {
-        const phone = phoneInput.value.trim();
+        const phone = phoneInput.value.trim().replace(/\s/g, '');
         if (!phone || phone.length < 10) {
-          authError.textContent = 'شماره را صحیح وارد کن';
+          authError.textContent = 'شماره موبایل را صحیح وارد کنید';
           return;
         }
+        phoneNumber = phone;
         authError.textContent = '';
         try {
           const res = await fetch('/api/register', {
@@ -154,25 +241,32 @@
           });
           const data = await res.json();
           if (!data.success) throw new Error(data.error);
-          codeSection.style.display = 'block';
-          authError.textContent = 'کد به گوشی شما ارسال شد (برای تست در کنسول سرور ببینید)';
+          phoneStep.style.display = 'none';
+          codeStep.style.display = 'block';
+          authError.textContent = '✅ کد تایید ارسال شد (برای تست در کنسول سرور ببینید)';
+          authError.style.color = '#22c55e';
+          // نمایش کد در برنامه برای تست
+          if (data.code) {
+            authError.textContent += `\n📱 کد: ${data.code}`;
+          }
+          setTimeout(() => { authError.textContent = ''; }, 10000);
         } catch (e) {
           authError.textContent = e.message || 'خطا در ارسال کد';
+          authError.style.color = '#ef4444';
         }
       });
 
       verifyBtn.addEventListener('click', async () => {
-        const phone = phoneInput.value.trim();
         const code = codeInput.value.trim();
         if (!code || code.length !== 6) {
-          authError.textContent = 'کد ۶ رقمی را وارد کن';
+          authError.textContent = 'کد ۶ رقمی را وارد کنید';
           return;
         }
         try {
           const res = await fetch('/api/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, code })
+            body: JSON.stringify({ phone: phoneNumber, code })
           });
           const data = await res.json();
           if (!data.success) throw new Error(data.error);
@@ -180,11 +274,21 @@
           authPage.style.display = 'none';
           app.style.display = 'flex';
           initSocket();
-          loadContacts();
+          loadUserData();
+          applyTheme(isDark);
         } catch (e) {
           authError.textContent = e.message || 'کد اشتباه است';
+          authError.style.color = '#ef4444';
         }
       });
+
+      resendCodeBtn.addEventListener('click', () => {
+        sendCodeBtn.click();
+      });
+
+      // ورود با Enter
+      phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendCodeBtn.click(); });
+      codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyBtn.click(); });
 
       // ---------- سوکت ----------
       function initSocket() {
@@ -196,16 +300,21 @@
         socket.on('connect', () => console.log('✅ متصل به سرور'));
 
         socket.on('contacts', (list) => {
-          contacts = list.filter(u => u.id !== currentUser.id);
+          contacts = list;
           renderContacts();
         });
 
+        socket.on('user_info', (user) => {
+          currentUser = user;
+          updateProfileUI();
+        });
+
         socket.on('new_message', (msg) => {
-          if (msg.from === currentContact?.id || msg.to === currentContact?.id) {
+          const isRelevant = msg.from === currentContact?.id || msg.to === currentContact?.id;
+          if (isRelevant) {
             messages.push(msg);
             renderMessages();
           }
-          // به‌روزرسانی لیست مخاطب‌ها (نمایش آخرین پیام)
           updateContactLastMessage(msg);
         });
 
@@ -214,10 +323,22 @@
           if (msg) { msg.reactions = reactions; renderMessages(); }
         });
 
-        socket.on('message_deleted', (messageId) => {
+        socket.on('message_deleted', ({ messageId, forEveryone }) => {
           const idx = messages.findIndex(m => m.id === messageId);
-          if (idx !== -1) messages.splice(idx, 1);
-          renderMessages();
+          if (idx !== -1) {
+            if (forEveryone) {
+              messages.splice(idx, 1);
+            } else {
+              messages[idx].deleted = true;
+              messages[idx].text = 'این پیام توسط شما حذف شد';
+            }
+            renderMessages();
+          }
+        });
+
+        socket.on('message_edited', ({ messageId, text }) => {
+          const msg = messages.find(m => m.id === messageId);
+          if (msg) { msg.text = text; msg.edited = true; renderMessages(); }
         });
 
         socket.on('user_typing', ({ from, isTyping }) => {
@@ -228,31 +349,84 @@
 
         socket.on('profile_updated', (data) => {
           if (data.userId === currentContact?.id) {
-            // به‌روزرسانی اطلاعات مخاطب
             const contact = contacts.find(c => c.id === data.userId);
             if (contact) Object.assign(contact, data);
             renderContacts();
             updateChatHeader();
           }
+          if (data.userId === currentUser.id) {
+            Object.assign(currentUser, data);
+            updateProfileUI();
+          }
         });
+
+        socket.on('user_offline', ({ userId }) => {
+          if (userId === currentContact?.id) {
+            chatContactStatus.textContent = 'آخرین بازدید: لحظاتی پیش';
+          }
+        });
+
+        socket.on('contact_update', ({ contactId, lastMessage }) => {
+          updateContactLastMessage(lastMessage);
+        });
+
+        socket.on('error', (msg) => {
+          alert('⚠️ ' + msg);
+        });
+
+        socket.on('disconnect', () => {
+          console.log('❌ قطع شد');
+        });
+      }
+
+      // ---------- بارگذاری اطلاعات ----------
+      function loadUserData() {
+        updateProfileUI();
+        applyTheme(currentUser.settings?.theme === 'dark');
+      }
+
+      function updateProfileUI() {
+        if (!currentUser) return;
+        profileFullname.value = currentUser.fullName || '';
+        profileUsername.value = currentUser.username || '';
+        profileBio.value = currentUser.bio || '';
+        profileAge.value = currentUser.age || '';
+        profileGender.value = currentUser.gender || '';
+        if (currentUser.avatar) {
+          profileAvatarImg.src = currentUser.avatar;
+        }
+        myStatus.textContent = '🟢 آنلاین';
       }
 
       // ---------- رندر مخاطب‌ها ----------
       function renderContacts(filter = '') {
-        const list = contacts.filter(c => c.username.includes(filter) || c.phone.includes(filter));
+        const query = filter.toLowerCase();
+        const list = contacts.filter(c => 
+          c.username.toLowerCase().includes(query) || 
+          c.phone.includes(query) ||
+          (c.fullName && c.fullName.toLowerCase().includes(query))
+        );
         contactList.innerHTML = '';
+        if (list.length === 0) {
+          contactList.innerHTML = '<div class="empty-state">مخاطبی یافت نشد</div>';
+          return;
+        }
         list.forEach(contact => {
           const div = document.createElement('div');
           div.className = 'contact-item';
           if (contact.id === currentContact?.id) div.classList.add('active');
+          const isOnline = contact.isOnline;
+          const avatarLetter = (contact.fullName || contact.username).charAt(0).toUpperCase();
           div.innerHTML = `
             <div class="contact-avatar" style="background:${getColor(contact.id)}">
-              ${contact.username.charAt(0).toUpperCase()}
+              ${contact.avatar ? `<img src="${contact.avatar}">` : avatarLetter}
+              ${isOnline ? '<span class="online-dot"></span>' : ''}
             </div>
             <div class="contact-info">
-              <div class="contact-name">${contact.username}</div>
-              <div class="contact-last-msg">${getLastMessage(contact.id) || '...'}</div>
+              <div class="contact-name">${contact.fullName || contact.username}</div>
+              <div class="contact-last-msg">${getLastMessage(contact.id) || 'شروع مکالمه'}</div>
             </div>
+            <div class="contact-time">${getLastMessageTime(contact.id)}</div>
           `;
           div.addEventListener('click', () => openChat(contact));
           contactList.appendChild(div);
@@ -262,243 +436,84 @@
       function getColor(id) {
         let hash = 0;
         for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-        return `hsl(${Math.abs(hash) % 360}, 70%, 55%)`;
+        const hue = Math.abs(hash) % 360;
+        return `hsl(${hue}, 65%, 50%)`;
       }
 
       function getLastMessage(contactId) {
-        const msgs = messages.filter(m => (m.from === contactId || m.to === contactId) && !m.deleted);
+        const msgs = messages.filter(m => 
+          (m.from === contactId || m.to === contactId) && !m.deleted
+        );
         const last = msgs[msgs.length - 1];
-        return last ? (last.text || '📎 فایل') : '';
+        if (!last) return '';
+        if (last.file && !last.text) return '📎 فایل';
+        if (last.file && last.text) return last.text;
+        return last.text || '';
+      }
+
+      function getLastMessageTime(contactId) {
+        const msgs = messages.filter(m => 
+          (m.from === contactId || m.to === contactId) && !m.deleted
+        );
+        const last = msgs[msgs.length - 1];
+        if (!last) return '';
+        const date = new Date(last.timestamp);
+        return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
       }
 
       function updateContactLastMessage(msg) {
-        // فقط برای به‌روز کردن لیست
-        renderContacts(searchInput.value);
+        // بروزرسانی لیست
+        if (currentContact && (msg.from === currentContact.id || msg.to === currentContact.id)) {
+          renderContacts(searchInput.value);
+        } else {
+          // فقط آیکون بروزرسانی
+        }
       }
 
       // ---------- باز کردن چت ----------
-      function openChat(contact) {
+      async function openChat(contact) {
         currentContact = contact;
-        activeChatId = contact.id;
-        chatContactName.textContent = contact.username;
-        // دریافت پیام‌ها از دیتابیس (در صورت نیاز از سرور درخواست می‌کنیم)
-        fetchMessages(contact.id);
+        chatContactName.textContent = contact.fullName || contact.username;
+        updateChatHeader();
+        
+        // دریافت پیام‌ها از سرور
+        try {
+          const res = await fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, contactId: contact.id })
+          });
+          messages = await res.json();
+          renderMessages();
+        } catch (e) {
+          messages = [];
+          renderMessages();
+        }
+        
+        // اعلام دیده شدن پیام‌ها
+        socket.emit('message_seen', { contactId: contact.id });
+        
+        // هایلایت
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-        // active کردن مخاطب
         const items = contactList.querySelectorAll('.contact-item');
         items.forEach(el => {
-          if (el.textContent.includes(contact.username)) el.classList.add('active');
+          if (el.textContent.includes(contact.username) || el.textContent.includes(contact.fullName || '')) {
+            el.classList.add('active');
+          }
         });
-        updateChatHeader();
+        
         messageInput.focus();
       }
 
-      async function fetchMessages(contactId) {
-        // در این نسخه ساده، پیام‌ها از حافظه socket می‌آیند، ولی برای بارگذاری تاریخچه می‌تونیم از سرور بخواهیم
-        // برای سادگی، از socket درخواست تاریخچه می‌کنیم (قبلاً در کد سرور پیاده‌سازی نشده)
-        // اما می‌تونیم با یه رویداد سفارشی این کار رو بکنیم.
-        // فعلاً پیام‌ها رو خالی می‌کنیم و منتظر new_message می‌مونیم.
-        messages = [];
-        renderMessages();
-        // درخواست تاریخچه از سرور (باید در سرور پیاده‌سازی بشه)
-        socket.emit('get_history', { contactId });
+      function updateChatHeader() {
+        if (!currentContact) return;
+        const contact = currentContact;
+        chatContactName.textContent = contact.fullName || contact.username;
+        const avatarLetter = (contact.fullName || contact.username).charAt(0).toUpperCase();
+        chatAvatar.innerHTML = contact.avatar ? 
+          `<img src="${contact.avatar}">` : 
+          `<span style="background:${getColor(contact.id)}">${avatarLetter}</span>`;
+        chatContactStatus.textContent = contact.isOnline ? '🟢 آنلاین' : 'آخرین بازدید: لحظاتی پیش';
       }
 
-      // ---------- رندر پیام‌ها ----------
-      function renderMessages() {
-        messagesContainer.innerHTML = '';
-        const msgs = messages.filter(m => !m.deleted);
-        msgs.forEach(msg => {
-          const isMine = msg.from === currentUser.id;
-          const div = document.createElement('div');
-          div.className = `message ${isMine ? 'mine' : 'other'}`;
-          div.dataset.id = msg.id;
-          let content = '';
-          if (msg.text) content += `<div class="text">${msg.text}</div>`;
-          if (msg.file) {
-            const ext = msg.file.split('.').pop().toLowerCase();
-            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-              content += `<img src="${msg.file}" class="file-preview" onclick="window.open('${msg.file}')">`;
-            } else if (['mp4','webm','ogg'].includes(ext)) {
-              content += `<video src="${msg.file}" controls class="file-preview"></video>`;
-            } else {
-              content += `<a href="${msg.file}" target="_blank" class="file-link">📎 دانلود فایل</a>`;
-            }
-          }
-          // ریاکشن‌ها
-          let reactionHtml = '';
-          if (msg.reactions && msg.reactions.length) {
-            const grouped = msg.reactions.reduce((acc, r) => {
-              acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-              return acc;
-            }, {});
-            reactionHtml = Object.entries(grouped).map(([emoji, count]) =>
-              `<span class="reaction-badge">${emoji} ${count}</span>`
-            ).join('');
-          }
-          const time = new Date(msg.timestamp).toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
-          div.innerHTML = `
-            <div class="bubble">
-              ${!isMine ? `<div class="sender-name">${msg.from === currentContact?.id ? currentContact.username : ''}</div>` : ''}
-              ${content}
-              ${reactionHtml ? `<div class="reactions">${reactionHtml}</div>` : ''}
-              <div class="time">${time}</div>
-              ${isMine ? `<div class="msg-actions">
-                <button class="react-btn" data-msgid="${msg.id}">😊</button>
-                <button class="delete-btn" data-msgid="${msg.id}"><i class="fas fa-trash"></i></button>
-              </div>` : ''}
-            </div>
-          `;
-          messagesContainer.appendChild(div);
-        });
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-        // رویدادهای ریاکشن و حذف
-        document.querySelectorAll('.react-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const msgId = btn.dataset.msgid;
-            // نمایش اموجی‌پیکر
-            const picker = window.emojiPicker;
-            picker.style.display = 'block';
-            picker.style.position = 'absolute';
-            picker.style.bottom = '60px';
-            picker.style.right = '20px';
-            picker.addEventListener('emoji-click', (ev) => {
-              const emoji = ev.detail.unicode;
-              socket.emit('reaction', { messageId: msgId, emoji });
-              picker.style.display = 'none';
-            }, { once: true });
-          });
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const msgId = btn.dataset.msgid;
-            const forEveryone = confirm('آیا برای همه حذف شود؟');
-            socket.emit('delete_message', { messageId: msgId, forEveryone });
-          });
-        });
-      }
-
-      // ---------- ارسال پیام ----------
-      function sendMessage() {
-        const text = messageInput.value.trim();
-        if (!text && !fileInput.files.length) return;
-        if (fileInput.files.length) {
-          const file = fileInput.files[0];
-          const formData = new FormData();
-          formData.append('file', file);
-          fetch('/upload', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-              if (data.url) {
-                socket.emit('private_message', { to: currentContact.id, text, file: data.url });
-                messageInput.value = '';
-                fileInput.value = '';
-              }
-            });
-        } else {
-          socket.emit('private_message', { to: currentContact.id, text, file: null });
-          messageInput.value = '';
-        }
-      }
-
-      // ---------- تنظیمات و پروفایل ----------
-      profileBtn.addEventListener('click', () => {
-        profilePanel.style.display = 'block';
-        profileUsername.value = currentUser.username || '';
-        profileBio.value = currentUser.bio || '';
-        themeSelect.value = currentUser.settings?.theme || 'dark';
-      });
-
-      closePanel.addEventListener('click', () => profilePanel.style.display = 'none');
-
-      saveProfileBtn.addEventListener('click', () => {
-        const data = {
-          username: profileUsername.value.trim() || currentUser.username,
-          bio: profileBio.value.trim(),
-          settings: { theme: themeSelect.value }
-        };
-        socket.emit('update_profile', data);
-        currentUser = { ...currentUser, ...data };
-        profilePanel.style.display = 'none';
-        // به‌روزرسانی تم
-        document.body.className = themeSelect.value;
-      });
-
-      // ---------- تم ----------
-      function applyTheme(theme) {
-        document.body.className = theme;
-        if (theme === 'light') {
-          document.body.style.setProperty('--bg', '#f0f2f5');
-          document.body.style.setProperty('--text', '#1c1e21');
-        } else {
-          document.body.style.setProperty('--bg', '#0b1120');
-          document.body.style.setProperty('--text', '#e2e8f0');
-        }
-      }
-
-      // ---------- خروج ----------
-      logoutBtn.addEventListener('click', () => {
-        if (socket) socket.disconnect();
-        location.reload();
-      });
-
-      // ---------- رویدادهای چت ----------
-      sendBtn.addEventListener('click', sendMessage);
-      messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
-      });
-      messageInput.addEventListener('input', () => {
-        if (currentContact) {
-          socket.emit('typing', { to: currentContact.id, isTyping: messageInput.value.trim().length > 0 });
-        }
-      });
-
-      attachBtn.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) sendMessage();
-      });
-
-      // اموجی
-      emojiBtn.addEventListener('click', () => {
-        const picker = window.emojiPicker;
-        picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
-        picker.style.position = 'absolute';
-        picker.style.bottom = '70px';
-        picker.style.left = '10px';
-        picker.addEventListener('emoji-click', (ev) => {
-          messageInput.value += ev.detail.unicode;
-          messageInput.focus();
-        });
-      });
-
-      // جستجو
-      searchInput.addEventListener('input', () => {
-        renderContacts(searchInput.value);
-      });
-
-      // ---------- بارگذاری اولیه ----------
-      function loadContacts() {
-        // contacts توسط socket ارسال میشه
-      }
-
-      // وقتی صفحه بارگذاری شد
-      if (currentUser) {
-        applyTheme(currentUser.settings?.theme || 'dark');
-      }
-
-      // برای بستن پنل با کلیک خارج
-      document.addEventListener('click', (e) => {
-        if (profilePanel.style.display === 'block' && !profilePanel.contains(e.target) && e.target.id !== 'profile-btn') {
-          profilePanel.style.display = 'none';
-        }
-      });
-
-      console.log('🚀 متین‌گرام راه‌اندازی شد!');
-    })();
-  </script>
-</body>
-</html>
+      // ---------
