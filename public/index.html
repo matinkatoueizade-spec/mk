@@ -1,215 +1,1013 @@
-<!DOCTYPE html><html lang="fa" dir="rtl"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>🌍 گروه چت همگانی Ultimate</title><link rel="stylesheet" href="style.css">
-</head><body><!-- Loading Screen --><div class="loading-screen" id="loadingScreen"><div class="loading-logo">
-    🌍 Chat Ultimate
-</div>
+const socket = io();
 
-<div class="loading-bar">
-    <div class="loading-fill"></div>
-</div>
+/* =========================
+Elements
+========================= */
 
-</div><!-- Main App --><div class="app"><!-- Topbar -->
-<header class="topbar">
+const messagesBox =
+document.getElementById("messages");
 
-    <div class="logo">
-        🌍 گروه چت همگانی
-    </div>
+const messageInput =
+document.getElementById("messageInput");
 
-    <div class="topbar-actions">
+const sendBtn =
+document.getElementById("sendBtn");
 
-        <div class="online">
-            🟢 <span id="onlineCount">0</span>
-        </div>
+const onlineCount =
+document.getElementById("onlineCount");
 
-        <button id="settingsBtn" title="تنظیمات">
-            ⚙️
-        </button>
+const loadingScreen =
+document.getElementById("loadingScreen");
 
-        <button id="profileBtn" title="پروفایل">
-            👤
-        </button>
+/* =========================
+Username
+========================= */
 
-    </div>
+let username =
+localStorage.getItem(
+"chat_username"
+);
 
-</header>
+if(!username){
 
-<!-- Main -->
-<div class="main">
+username = prompt(
+"نام کاربری:"
+);
 
-    <!-- Users -->
-    <aside class="users">
+if(
+!username ||
+!username.trim()
+){
 
-        <div class="users-title">
-            کاربران آنلاین
-        </div>
+username =
+"مهمان_" +
+Math.floor(
+Math.random()*9999
+);
 
-        <div class="search-box">
+}
 
-            <input
-                id="userSearch"
-                type="text"
-                placeholder="جستجو کاربر...">
+localStorage.setItem(
+"chat_username",
+username
+);
 
-        </div>
+}
 
-        <div id="usersList"></div>
+socket.emit(
+"join",
+username
+);
 
-    </aside>
+/* =========================
+Loading
+========================= */
 
-    <!-- Chat -->
-    <section class="chat">
+window.addEventListener(
+"load",
+()=>{
 
-        <div id="messages"></div>
+setTimeout(()=>{
 
-        <div id="typingArea"></div>
+if(loadingScreen){
 
-        <div class="input-area">
+loadingScreen.style.display =
+"none";
 
-            <button id="emojiBtn">
-                😀
-            </button>
+}
 
-            <input
-                id="messageInput"
-                type="text"
-                autocomplete="off"
-                maxlength="500"
-                placeholder="پیام خود را بنویسید...">
+},1200);
 
-            <button id="sendBtn">
-                ارسال
-            </button>
+}
+);
 
-        </div>
+/* =========================
+Send Message
+========================= */
 
-        <!-- Emoji Panel -->
-        <div class="emoji-panel" id="emojiPanel">
+function sendMessage(){
 
-            <div class="emoji">😀</div>
-            <div class="emoji">😂</div>
-            <div class="emoji">😍</div>
-            <div class="emoji">😎</div>
-            <div class="emoji">🔥</div>
-            <div class="emoji">❤️</div>
-            <div class="emoji">👍</div>
-            <div class="emoji">🎉</div>
-            <div class="emoji">🚀</div>
-            <div class="emoji">🤖</div>
+const text =
+messageInput.value.trim();
 
-        </div>
+if(!text) return;
 
-    </section>
+socket.emit(
+"chatMessage",
+text
+);
 
-</div>
+messageInput.value = "";
 
-</div><!-- Profile Modal --><div class="modal" id="profileModal"><div class="modal-content">
+}
 
-    <div class="modal-header">
+sendBtn.addEventListener(
+"click",
+sendMessage
+);
 
-        <div class="modal-title">
-            پروفایل من
-        </div>
+messageInput.addEventListener(
+"keydown",
+(e)=>{
 
-        <button
-            id="closeProfile"
-            class="modal-close">
-            ×
-        </button>
+if(
+e.key === "Enter"
+){
 
-    </div>
+sendMessage();
 
-    <div class="modal-body">
+}
 
-        <div class="profile-card">
+}
+);
 
-            <div
-                class="profile-avatar"
-                id="profileAvatar">
-                M
-            </div>
+/* =========================
+Message Render
+========================= */
 
-            <div
-                class="profile-name"
-                id="profileName">
-                کاربر
-            </div>
+function createMessage(
+msg,
+isMe
+){
 
-            <div class="profile-status">
-                آنلاین
-            </div>
+const div =
+document.createElement(
+"div"
+);
 
-        </div>
+div.className =
+isMe
+? "message me"
+: "message other";
 
-    </div>
+const time =
+new Date(
+msg.time
+).toLocaleTimeString(
+"fa-IR",
+{
+hour:"2-digit",
+minute:"2-digit"
+}
+);
 
-</div>
+div.innerHTML = `
 
-</div><!-- Private Chat Modal --><div class="modal" id="privateModal"><div class="modal-content">
+<div class="username">
+${msg.user}
+</div><div class="message-text">
+${msg.text}
+</div><div class="time">
+${time}
+</div>`;
 
-    <div class="modal-header">
+messagesBox.appendChild(
+div
+);
 
-        <div class="modal-title">
-            چت خصوصی
-        </div>
+messagesBox.scrollTop =
+messagesBox.scrollHeight;
 
-        <button
-            id="closePrivate"
-            class="modal-close">
-            ×
-        </button>
+}
 
-    </div>
+/* =========================
+System Message
+========================= */
 
-    <div class="modal-body">
+function createSystemMessage(
+text
+){
 
-        <div id="privateChatContent">
-            شروع گفتگوی خصوصی...
-        </div>
+const div =
+document.createElement(
+"div"
+);
 
-    </div>
+div.className =
+"system";
 
-</div>
+div.textContent =
+text;
 
-</div><!-- Settings --><div
-class="settings-panel"
-id="settingsPanel"><div class="settings-header">
-    تنظیمات
-</div>
+messagesBox.appendChild(
+div
+);
 
-<div class="setting-item">
+messagesBox.scrollTop =
+messagesBox.scrollHeight;
 
-    <div class="setting-title">
-        حالت تاریک
-    </div>
+}
 
-    <div class="setting-desc">
-        فعال یا غیرفعال کردن تم تاریک
-    </div>
+/* =========================
+Receive Messages
+========================= */
 
-    <div
-    class="switch active"
-    id="darkModeSwitch"></div>
+socket.on(
+"chatMessage",
+(msg)=>{
 
-</div>
+createMessage(
+msg,
+msg.user === username
+);
 
-<div class="setting-item">
+}
+);
 
-    <div class="setting-title">
-        اعلان‌ها
-    </div>
+/* =========================
+History
+========================= */
 
-    <div class="setting-desc">
-        نمایش اعلان پیام‌های جدید
-    </div>
+socket.on(
+"messageHistory",
+(history)=>{
 
-    <div
-    class="switch active"
-    id="notificationSwitch"></div>
+messagesBox.innerHTML = "";
 
-</div>
+history.forEach(
+(msg)=>{
 
-</div><!-- Toast --><div class="toast" id="toast">
-پیام جدید دریافت شد
-</div><script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body>
-</html>
+createMessage(
+msg,
+msg.user === username
+);
+
+}
+);
+
+}
+);
+
+/* =========================
+System Events
+========================= */
+
+socket.on(
+"systemMessage",
+(data)=>{
+
+if(
+typeof data ===
+"string"
+){
+
+createSystemMessage(
+data
+);
+
+}else{
+
+createSystemMessage(
+data.text
+);
+
+}
+
+}
+);
+/* =========================
+Online Users
+========================= */
+
+socket.on(
+"usersList",
+(users)=>{
+
+onlineCount.textContent =
+users.length;
+
+}
+);
+
+/* =========================
+Typing System
+========================= */
+
+const typingArea =
+document.getElementById(
+"typingArea"
+);
+
+let typingTimeout;
+
+messageInput.addEventListener(
+"input",
+()=>{
+
+socket.emit(
+"typing"
+);
+
+clearTimeout(
+typingTimeout
+);
+
+typingTimeout =
+setTimeout(()=>{
+
+socket.emit(
+"stopTyping"
+);
+
+},1500);
+
+}
+);
+
+socket.on(
+"typing",
+(data)=>{
+
+typingArea.textContent =
+data.user +
+" در حال تایپ است...";
+
+}
+);
+
+socket.on(
+"stopTyping",
+()=>{
+
+typingArea.textContent =
+"";
+
+}
+);
+
+/* =========================
+Settings Panel
+========================= */
+
+const settingsBtn =
+document.getElementById(
+"settingsBtn"
+);
+
+const settingsPanel =
+document.getElementById(
+"settingsPanel"
+);
+
+if(
+settingsBtn &&
+settingsPanel
+){
+
+settingsBtn.addEventListener(
+"click",
+()=>{
+
+settingsPanel.classList.toggle(
+"show"
+);
+
+}
+);
+
+}
+
+/* =========================
+Dark Mode
+========================= */
+
+const darkModeSwitch =
+document.getElementById(
+"darkModeSwitch"
+);
+
+const savedTheme =
+localStorage.getItem(
+"theme"
+);
+
+if(
+savedTheme === "light"
+){
+
+document.body.classList.add(
+"light"
+);
+
+if(darkModeSwitch){
+
+darkModeSwitch.classList.remove(
+"active"
+);
+
+}
+
+}
+
+if(darkModeSwitch){
+
+darkModeSwitch.addEventListener(
+"click",
+()=>{
+
+darkModeSwitch.classList.toggle(
+"active"
+);
+
+document.body.classList.toggle(
+"light"
+);
+
+localStorage.setItem(
+"theme",
+document.body.classList.contains(
+"light"
+)
+? "light"
+: "dark"
+);
+
+}
+);
+
+}
+/* =========================
+Toast Notification
+========================= */
+
+const toast =
+document.getElementById(
+"toast"
+);
+
+function showToast(
+text
+){
+
+if(!toast) return;
+
+toast.textContent =
+text;
+
+toast.classList.add(
+"show"
+);
+
+setTimeout(()=>{
+
+toast.classList.remove(
+"show"
+);
+
+},3000);
+
+}
+
+/* =========================
+Browser Notification
+========================= */
+
+if(
+"Notification"
+in window
+){
+
+Notification.requestPermission();
+
+}
+
+function pushNotification(
+title,
+body
+){
+
+if(
+localStorage.getItem(
+"notify"
+) === "off"
+){
+
+return;
+
+}
+
+if(
+Notification.permission ===
+"granted"
+){
+
+new Notification(
+title,
+{
+body
+}
+);
+
+}
+
+}
+
+/* =========================
+Message Sound
+========================= */
+
+const messageAudio =
+new Audio(
+"https://actions.google.com/sounds/v1/cartoon/pop.ogg"
+);
+
+function playMessageSound(){
+
+messageAudio.currentTime = 0;
+
+messageAudio.play()
+.catch(()=>{});
+
+}
+
+/* =========================
+Incoming Messages
+========================= */
+
+socket.on(
+"chatMessage",
+(msg)=>{
+
+if(
+msg.user !== username
+){
+
+playMessageSound();
+
+pushNotification(
+msg.user,
+msg.text
+);
+
+}
+
+}
+);
+
+/* =========================
+Profile Modal
+========================= */
+
+const profileBtn =
+document.getElementById(
+"profileBtn"
+);
+
+const profileModal =
+document.getElementById(
+"profileModal"
+);
+
+const closeProfile =
+document.getElementById(
+"closeProfile"
+);
+
+const profileName =
+document.getElementById(
+"profileName"
+);
+
+const profileAvatar =
+document.getElementById(
+"profileAvatar"
+);
+
+if(
+profileBtn &&
+profileModal
+){
+
+profileBtn.addEventListener(
+"click",
+()=>{
+
+profileName.textContent =
+username;
+
+profileAvatar.textContent =
+username.charAt(0)
+.toUpperCase();
+
+profileModal.classList.add(
+"show"
+);
+
+}
+);
+
+}
+
+if(closeProfile){
+
+closeProfile.addEventListener(
+"click",
+()=>{
+
+profileModal.classList.remove(
+"show"
+);
+
+}
+);
+
+}
+
+/* =========================
+Notification Switch
+========================= */
+
+const notificationSwitch =
+document.getElementById(
+"notificationSwitch"
+);
+
+if(notificationSwitch){
+
+const notifyState =
+localStorage.getItem(
+"notify"
+);
+
+if(
+notifyState !== "off"
+){
+
+notificationSwitch.classList.add(
+"active"
+);
+
+}
+
+notificationSwitch.addEventListener(
+"click",
+()=>{
+
+notificationSwitch.classList.toggle(
+"active"
+);
+
+const enabled =
+notificationSwitch.classList.contains(
+"active"
+);
+
+localStorage.setItem(
+"notify",
+enabled
+? "on"
+: "off"
+);
+
+showToast(
+enabled
+? "🔔 اعلان‌ها فعال شد"
+: "🔕 اعلان‌ها غیرفعال شد"
+);
+
+}
+);
+
+}
+
+/* =========================
+Welcome Toast
+========================= */
+
+setTimeout(()=>{
+
+showToast(
+"👋 خوش آمدی " +
+username
+);
+
+},1500);
+/* =========================
+Users Panel
+========================= */
+
+const usersList =
+document.getElementById(
+"usersList"
+);
+
+const userSearch =
+document.getElementById(
+"userSearch"
+);
+
+let allUsers = [];
+
+/* =========================
+Render Users
+========================= */
+
+function renderUsers(){
+
+if(!usersList) return;
+
+usersList.innerHTML = "";
+
+allUsers.forEach(user=>{
+
+const item =
+document.createElement(
+"div"
+);
+
+item.className =
+"user-item";
+
+const avatar =
+user.username
+.charAt(0)
+.toUpperCase();
+
+item.innerHTML = `
+
+<div class="user-avatar">
+${avatar}
+</div><div class="user-info"><div class="user-name">
+${user.username}
+</div><div class="user-status">
+آنلاین
+</div></div><div class="user-online">
+</div>`;
+
+usersList.appendChild(
+item
+);
+
+});
+
+}
+
+/* =========================
+Receive Users
+========================= */
+
+socket.on(
+"usersList",
+(users)=>{
+
+allUsers = users;
+
+onlineCount.textContent =
+users.length;
+
+renderUsers();
+
+}
+);
+
+/* =========================
+Search Users
+========================= */
+
+if(userSearch){
+
+userSearch.addEventListener(
+"input",
+()=>{
+
+const value =
+userSearch.value
+.toLowerCase()
+.trim();
+
+const items =
+document.querySelectorAll(
+".user-item"
+);
+
+items.forEach(item=>{
+
+const name =
+item.querySelector(
+".user-name"
+)
+.textContent
+.toLowerCase();
+
+item.style.display =
+name.includes(value)
+? "flex"
+: "none";
+
+});
+
+}
+);
+
+}
+
+/* =========================
+User Join Toast
+========================= */
+
+socket.on(
+"systemMessage",
+(data)=>{
+
+const text =
+typeof data === "string"
+? data
+: data.text;
+
+if(
+text.includes("وارد شد")
+){
+
+showToast(
+"🎉 کاربر جدید وارد شد"
+);
+
+}
+
+}
+);
+/* =========================
+ESC Close Panels
+========================= */
+
+document.addEventListener(
+"keydown",
+(e)=>{
+
+if(
+e.key === "Escape"
+){
+
+if(profileModal){
+
+profileModal.classList.remove(
+"show"
+);
+
+}
+
+if(settingsPanel){
+
+settingsPanel.classList.remove(
+"show"
+);
+
+}
+
+}
+
+}
+);
+
+/* =========================
+Close Modal By Click
+========================= */
+
+window.addEventListener(
+"click",
+(e)=>{
+
+if(
+profileModal &&
+e.target === profileModal
+){
+
+profileModal.classList.remove(
+"show"
+);
+
+}
+
+}
+);
+
+/* =========================
+Auto Focus
+========================= */
+
+window.addEventListener(
+"load",
+()=>{
+
+setTimeout(()=>{
+
+if(messageInput){
+
+messageInput.focus();
+
+}
+
+},300);
+
+}
+);
+
+/* =========================
+Connection Events
+========================= */
+
+socket.on(
+"connect",
+()=>{
+
+showToast(
+"🟢 اتصال برقرار شد"
+);
+
+}
+);
+
+socket.on(
+"disconnect",
+()=>{
+
+showToast(
+"🔴 ارتباط با سرور قطع شد"
+);
+
+}
+);
+
+/* =========================
+Error Messages
+========================= */
+
+socket.on(
+"errorMessage",
+(text)=>{
+
+showToast(
+text
+);
+
+}
+);
+
+/* =========================
+Prevent Empty Spaces
+========================= */
+
+messageInput.addEventListener(
+"paste",
+()=>{
+
+setTimeout(()=>{
+
+messageInput.value =
+messageInput.value.replace(
+/\s{3,}/g,
+" "
+);
+
+},10);
+
+}
+);
+
+/* =========================
+Character Counter
+========================= */
+
+const maxChars = 500;
+
+messageInput.addEventListener(
+"input",
+()=>{
+
+if(
+messageInput.value.length >
+maxChars
+){
+
+messageInput.value =
+messageInput.value.substring(
+0,
+maxChars
+);
+
+}
+
+}
+);
+
+/* =========================
+Page Title Restore
+========================= */
+
+window.addEventListener(
+"focus",
+()=>{
+
+document.title =
+"🌍 گروه چت همگانی Ultimate";
+
+}
+);
+
+/* =========================
+Startup Complete
+========================= */
+
+console.log(
+"🚀 Matin Chat Ultimate Ready"
+);
